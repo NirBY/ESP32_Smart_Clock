@@ -41,7 +41,7 @@ jobs:
           text = path.read_text(encoding="utf-8")
           text = text.replace(
               "build_path: C:/Users/nirbe/.esphome/build/${device_name}",
-              "build_path: .esphome/build/${device_name}",
+              "build_path: build/${device_name}",
           )
           path.write_text(text, encoding="utf-8")
           PY
