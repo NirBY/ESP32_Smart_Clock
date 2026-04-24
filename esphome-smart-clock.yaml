@@ -554,7 +554,7 @@ display:
         draw_digit(12, minute / 10);
         draw_digit(17, minute % 10);
         draw_colon(22);
-        draw_digit(24, second / 10);
+        draw_digit(23, second / 10);
         draw_digit(28, second % 10);
       };
 
