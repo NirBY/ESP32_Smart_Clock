@@ -359,7 +359,7 @@ The workflow:
 - builds the PlatformIO Bluetooth speaker firmware
 - uploads all firmware binaries to a GitHub Release
 
-Create a new release:
+Create a new release from the terminal:
 
 ```powershell
 git tag v1.0.0
@@ -367,6 +367,10 @@ git push origin v1.0.0
 ```
 
 Use a new tag for each release, for example `v1.0.1`, `v1.1.0`, or `v2.0.0`.
+
+You can also run **Build and Release Firmware** manually from GitHub Actions. Set `release_tag` to the new version, for example `v0.1.1-beta.1`. The workflow builds all firmware first, then creates the tag and GitHub Release only after the build succeeds.
+
+The repository also includes **Daily Package Update Verify**. It runs every day with the latest ESPHome, PlatformIO, and package versions available to CI. If all builds pass, it opens or updates a manual-review PR with a verification report. Merge that PR only after reviewing the build output, then create a new release from the verified commit.
 
 ### 4. Install The PlatformIO Hardware Test From VS Code
 
