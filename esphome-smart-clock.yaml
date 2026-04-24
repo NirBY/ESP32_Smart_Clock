@@ -584,16 +584,11 @@ display:
       if (active_until(id(sensor_message_until))
           && !isnan(id(aht_temperature).state)
           && !isnan(id(aht_humidity).state)) {
-        if (!isnan(id(bmp_pressure).state)) {
-          it.printf(0, 0, id(matrix_font), "%.1fC %.0f%% %.0fhPa",
-                    id(aht_temperature).state,
-                    id(aht_humidity).state,
-                    id(bmp_pressure).state);
-        } else {
-          it.printf(0, 0, id(matrix_font), "%.1fC %.0f%%",
-                    id(aht_temperature).state,
-                    id(aht_humidity).state);
-        }
+        char sensor_text[16];
+        snprintf(sensor_text, sizeof(sensor_text), "%.0fC %.1f%%",
+                 id(aht_temperature).state,
+                 id(aht_humidity).state);
+        show_text(sensor_text);
         return;
       }
 
@@ -644,6 +639,9 @@ media_player:
   - platform: speaker
     name: "Speaker"
     id: clock_speaker
+    files:
+      - id: volume_beep
+        file: media/volume-beep.wav
     on_play:
       - lambda: |-
           id(media_message) = "MUSIC";
@@ -669,6 +667,10 @@ media_player:
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
+    on_volume:
+      - media_player.speaker.play_on_device_media_file:
+          media_file: volume_beep
+          announcement: true
     buffer_size: 12000
     announcement_pipeline:
       speaker: announcement_speaker

@@ -81,6 +81,7 @@ Important limitations:
 
 - This hardware has a speaker only, not a microphone. It can play voice/TTS sent from Home Assistant, but it cannot listen for voice commands unless you add an I2S microphone.
 - Wi-Fi music playback is through Home Assistant/ESPHome as a network media player. It is not a native Chromecast, AirPlay, Spotify Connect, or DLNA speaker.
+- Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
 - The alarm trigger sets the matrix to `ALARM` and fires an `esphome.alarm_triggered` event. Use a Home Assistant automation to play TTS or `media_player.play_media` on the `Speaker` entity.
 - To allow the device to fire Home Assistant events, open the ESPHome integration device settings in Home Assistant and enable "Allow the device to perform Home Assistant actions".
 - The ESPHome config uses the Google Font `Noto Sans Hebrew`, so first compile needs internet access from the ESPHome builder.
@@ -88,29 +89,69 @@ Important limitations:
 
 ## Display Behavior
 
-The display always returns to the clock when a temporary screen has expired or when required data is missing.
+The display follows a fixed 7-rule spec. Anything not covered by these rules falls back to the clock.
 
-Default screen:
+### Clock Display Logic (spec)
 
-- Shows clock as `HH:MM:SS` using a custom 32x8 pixel layout across the full LED matrix.
-- Time is synced with NTP/SNTP.
-- NTP refresh interval is `1h`.
-- Before valid time is available, the display shows `--:--`.
+1. **Default:** show the clock. Time is synced from NTP/SNTP and the time source is refreshed every `1h`. Before NTP is valid, the display shows `--:--`.
+2. **Screen message from Home Assistant:** show the message for `10 seconds`, then return to the clock. Sent via the `esphome.esp32_smart_clock_show_message` action or by writing the `Screen Message` text entity.
+3. **Indoor sensors:** every `30 seconds`, show temperature and humidity for `3 seconds`. Barometric pressure is still exposed to Home Assistant, but it is not shown on the LED matrix.
+4. **Music / TTS:** while the speaker is active, show a label (`MUSIC` for media playback, `SPEAKER` for TTS/announcements). The label clears immediately on pause / idle / turn-off, and is hard-capped at `10 seconds` if no clear event arrives.
+5. **Wi-Fi disconnected:** every `30 seconds`, show `NO WIFI` for `3 seconds` until Wi-Fi recovers.
+6. **Date and day:** at the top of every hour, show day-of-week and date for `3 seconds`.
+7. **Invalid or missing data:** if any branch above has bad / `NaN` / not-yet-valid data (NTP not synced, sensor read failed, empty message, etc.), that branch is skipped and the clock is shown instead.
 
-Temporary screens:
+### Display Priority Order
 
-| Trigger | Display | Duration |
-|---|---|---:|
-| Home Assistant screen message | message text | 10 seconds |
-| Temperature/humidity/pressure data | `temp humidity pressure` | 3 seconds every 30 seconds |
-| Music playback starts | `MUSIC` | up to 10 seconds |
-| TTS/announcement starts | `SPEAKER` | up to 10 seconds |
-| Music pauses/stops | returns to clock | immediately |
-| Wi-Fi disconnected | `NO WIFI` | 3 seconds every 30 seconds |
-| Top of each hour | day/date | 3 seconds |
-| Invalid/missing data | clock | immediately |
+Multiple events can be active at the same time. The display lambda checks branches in this fixed order; the first match wins:
 
-The ESPHome speaker media player does not expose song-title metadata to the MAX7219 display. If you want a song name shown, send it from Home Assistant as a screen message; it will show for 10 seconds and return to the clock.
+1. `text_message` — Home Assistant message (10 s)
+2. `media_message` — `MUSIC` / `SPEAKER` (up to 10 s)
+3. `wifi_alert` — `NO WIFI` (3 s)
+4. `date_message` — `Day DD/MM` (3 s)
+5. `sensor_message` — `temp humidity` (3 s)
+6. Default clock — `HH:MM:SS`
+
+This is why a Home Assistant message hides a sensor screen, but a sensor screen never hides a message.
+
+### Temporary Screens
+
+| Trigger | Display | Duration | Source in `esphome-smart-clock.yaml` |
+|---|---|---:|---|
+| `esphome.esp32_smart_clock_show_message` action or `Screen Message` text entity | message text | 10 s | sets `text_message_until` in `api.actions.show_message` and `text.set_action` |
+| Music playback starts | `MUSIC` | up to 10 s, cleared on pause/idle/off | `media_player.on_play` sets `media_message_until` |
+| TTS / announcement starts | `SPEAKER` | up to 10 s, cleared on pause/idle/off | `media_player.on_announcement` sets `media_message_until` |
+| Music pauses, idles, or turns off | returns to clock | immediately | `on_pause` / `on_idle` / `on_turn_off` clear `media_message_until` |
+| Wi-Fi disconnected | `NO WIFI` | 3 s every 30 s | `interval: 30s` + `not: wifi.connected` sets `wifi_alert_until` |
+| Top of each hour | `Day DD/MM` | 3 s | `time.on_time` with `seconds: 0, minutes: 0` sets `date_message_until` |
+| Indoor sensors readable | `temp humidity`, for example `24C 57.4%` | 3 s every 30 s | `interval: 30s` with `!isnan` AHT guard sets `sensor_message_until`; the display uses the full-width pixel renderer |
+| Alarm time reached | `ALARM` | 10 s | `alarm_triggered` script sets `text_message_until` |
+| Invalid / missing data on any branch | clock | immediately | each branch only renders after its own validity check; otherwise control falls through to the clock |
+
+### Song Name Limitation
+
+The ESPHome `media_player: speaker` platform does not surface track-title metadata to the firmware, so the MAX7219 only ever shows the static labels `MUSIC` (for media playback) and `SPEAKER` (for TTS / announcements).
+
+If you want the song title on the matrix, push it from a Home Assistant automation as a screen message:
+
+```yaml
+action: esphome.esp32_smart_clock_show_message
+data:
+  message: "{{ state_attr('media_player.esp32_smart_clock_speaker', 'media_title') }}"
+```
+
+That will show for 10 seconds and then return to the clock, like any other screen message.
+
+### Reset Behavior
+
+The display returns to the clock immediately when any of these happens:
+
+- `esphome.esp32_smart_clock_clear_message` is called, or `Screen Message` is set to an empty string.
+- The media player fires `on_pause`, `on_idle`, or `on_turn_off`.
+- A temporary screen's data becomes invalid (`NaN` sensor read, empty message, NTP not yet valid). The matching branch is skipped and control falls through to the clock.
+- All temporary timeouts have expired and no event is currently active.
+
+### Rendering And Hardware Notes
 
 Short English/number messages use a custom 3x7 pixel renderer that spreads the text across all 32 columns. Longer supported messages scroll across the full matrix. Hebrew screen messages use the `Noto Sans Hebrew` font; the display helper reverses UTF-8 Hebrew text before drawing it so short right-to-left messages can be read on the left-to-right MAX7219 matrix.
 
