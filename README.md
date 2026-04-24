@@ -91,7 +91,7 @@ The display always returns to the clock when a temporary screen has expired or w
 
 Default screen:
 
-- Shows clock as `HH:MM`.
+- Shows clock as `HH:MM:SS` using a custom 32x8 pixel layout across the full LED matrix.
 - Time is synced with NTP/SNTP.
 - NTP refresh interval is `1h`.
 - Before valid time is available, the display shows `--:--`.
@@ -111,7 +111,7 @@ Temporary screens:
 
 The ESPHome speaker media player does not expose song-title metadata to the MAX7219 display. If you want a song name shown, send it from Home Assistant as a screen message; it will show for 10 seconds and return to the clock.
 
-Hebrew screen messages are supported with the `Noto Sans Hebrew` font. The display helper reverses UTF-8 Hebrew text before drawing it so short right-to-left messages can be read on the left-to-right MAX7219 matrix.
+Short English/number messages use a custom 3x7 pixel renderer that spreads the text across all 32 columns. Longer supported messages scroll across the full matrix. Hebrew screen messages use the `Noto Sans Hebrew` font; the display helper reverses UTF-8 Hebrew text before drawing it so short right-to-left messages can be read on the left-to-right MAX7219 matrix.
 
 Display brightness can be changed from Home Assistant with the `Display Brightness` number entity. `0` is dimmest, `15` is brightest.
 
@@ -554,8 +554,10 @@ In Home Assistant, you can also open the ESPHome device and use **Logs**.
 By default, the ESPHome firmware shows the clock from NTP/SNTP:
 
 ```text
-HH:MM
+HH:MM:SS
 ```
+
+The default clock is drawn directly as pixels across the full 8x32 matrix. Short English/number temporary messages are also drawn as 3x7 pixels across the full width. Hebrew and unsupported symbols use the configured font and may scroll.
 
 If Home Assistant sends a screen message, that message replaces the clock for 10 seconds.
 
@@ -593,7 +595,9 @@ Limitations:
 
 ### Text Does Not Use All LEDs
 
-Check the number of MAX7219 modules:
+For the ESPHome firmware, the default clock and supported English/number messages are drawn across the full 8x32 matrix. Hebrew text and unsupported symbols use the font renderer, so they may not occupy every column.
+
+If supported text still appears on only part of the display, check the number of MAX7219 modules:
 
 - Four 8x8 modules: keep `num_chips: 4`.
 - One 8x8 module: change `num_chips: 1`.

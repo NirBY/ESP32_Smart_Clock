@@ -397,19 +397,171 @@ display:
           it.print(0, 0, id(matrix_font), text.c_str());
         }
       };
+      auto pixel_glyph = [](char ch, uint8_t rows[7]) -> int {
+        for (int i = 0; i < 7; i++) {
+          rows[i] = 0;
+        }
+        if (ch >= 'a' && ch <= 'z') {
+          ch = ch - 'a' + 'A';
+        }
+        switch (ch) {
+          case ' ': return 2;
+          case '0': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case '1': rows[0]=0b010; rows[1]=0b110; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b111; return 3;
+          case '2': rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b111; rows[4]=0b100; rows[5]=0b100; rows[6]=0b111; return 3;
+          case '3': rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b111; rows[4]=0b001; rows[5]=0b001; rows[6]=0b111; return 3;
+          case '4': rows[0]=0b101; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b001; rows[5]=0b001; rows[6]=0b001; return 3;
+          case '5': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b111; rows[4]=0b001; rows[5]=0b001; rows[6]=0b111; return 3;
+          case '6': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b111; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case '7': rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3;
+          case '8': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case '9': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b001; rows[5]=0b001; rows[6]=0b111; return 3;
+          case 'A': rows[0]=0b010; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b101; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'B': rows[0]=0b110; rows[1]=0b101; rows[2]=0b101; rows[3]=0b110; rows[4]=0b101; rows[5]=0b101; rows[6]=0b110; return 3;
+          case 'C': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b100; rows[4]=0b100; rows[5]=0b100; rows[6]=0b111; return 3;
+          case 'D': rows[0]=0b110; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b110; return 3;
+          case 'E': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b110; rows[4]=0b100; rows[5]=0b100; rows[6]=0b111; return 3;
+          case 'F': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b110; rows[4]=0b100; rows[5]=0b100; rows[6]=0b100; return 3;
+          case 'G': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case 'H': rows[0]=0b101; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b101; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'I': rows[0]=0b111; rows[1]=0b010; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b111; return 3;
+          case 'J': rows[0]=0b001; rows[1]=0b001; rows[2]=0b001; rows[3]=0b001; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case 'K': rows[0]=0b101; rows[1]=0b101; rows[2]=0b110; rows[3]=0b100; rows[4]=0b110; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'L': rows[0]=0b100; rows[1]=0b100; rows[2]=0b100; rows[3]=0b100; rows[4]=0b100; rows[5]=0b100; rows[6]=0b111; return 3;
+          case 'M': rows[0]=0b101; rows[1]=0b111; rows[2]=0b111; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'N': rows[0]=0b101; rows[1]=0b111; rows[2]=0b111; rows[3]=0b111; rows[4]=0b101; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'O': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case 'P': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b100; rows[5]=0b100; rows[6]=0b100; return 3;
+          case 'Q': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b111; rows[5]=0b001; rows[6]=0b001; return 3;
+          case 'R': rows[0]=0b111; rows[1]=0b101; rows[2]=0b101; rows[3]=0b111; rows[4]=0b110; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'S': rows[0]=0b111; rows[1]=0b100; rows[2]=0b100; rows[3]=0b111; rows[4]=0b001; rows[5]=0b001; rows[6]=0b111; return 3;
+          case 'T': rows[0]=0b111; rows[1]=0b010; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3;
+          case 'U': rows[0]=0b101; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b111; return 3;
+          case 'V': rows[0]=0b101; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b101; rows[5]=0b101; rows[6]=0b010; return 3;
+          case 'W': rows[0]=0b101; rows[1]=0b101; rows[2]=0b101; rows[3]=0b101; rows[4]=0b111; rows[5]=0b111; rows[6]=0b101; return 3;
+          case 'X': rows[0]=0b101; rows[1]=0b101; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b101; rows[6]=0b101; return 3;
+          case 'Y': rows[0]=0b101; rows[1]=0b101; rows[2]=0b101; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3;
+          case 'Z': rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b010; rows[4]=0b100; rows[5]=0b100; rows[6]=0b111; return 3;
+          case '-': rows[3]=0b111; return 3;
+          case '.': rows[6]=0b010; return 3;
+          case ':': rows[2]=0b010; rows[5]=0b010; return 3;
+          case '/': rows[0]=0b001; rows[1]=0b001; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b100; rows[6]=0b100; return 3;
+          case '%': rows[0]=0b101; rows[1]=0b001; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b100; rows[6]=0b101; return 3;
+          default: return 0;
+        }
+      };
+      auto draw_pixel_text = [&](const std::string &text) -> bool {
+        if (text.empty() || has_hebrew(text)) {
+          return false;
+        }
+
+        std::vector<int> widths;
+        int text_width = 0;
+        for (char ch : text) {
+          uint8_t rows[7];
+          const int width = pixel_glyph(ch, rows);
+          if (width == 0) {
+            return false;
+          }
+          widths.push_back(width);
+          text_width += width;
+        }
+
+        const int gaps = widths.size() > 1 ? widths.size() - 1 : 0;
+        if (text_width + gaps <= 32) {
+          const int extra = 32 - text_width - gaps;
+          int x = 0;
+          for (size_t i = 0; i < text.size(); i++) {
+            uint8_t rows[7];
+            const int width = pixel_glyph(text[i], rows);
+            for (int y = 0; y < 7; y++) {
+              for (int col = 0; col < width; col++) {
+                if (rows[y] & (1 << (width - 1 - col))) {
+                  it.draw_pixel_at(x + col, y, Color::WHITE);
+                }
+              }
+            }
+            if (i + 1 < text.size()) {
+              const int spread = gaps > 0 ? extra / gaps + ((int) i < (extra % gaps) ? 1 : 0) : 0;
+              x += width + 1 + spread;
+            }
+          }
+        } else {
+          const int scroll_span = text_width + gaps + 33;
+          int x = 32 - ((now_ms / 120) % scroll_span);
+          for (size_t i = 0; i < text.size(); i++) {
+            uint8_t rows[7];
+            const int width = pixel_glyph(text[i], rows);
+            for (int y = 0; y < 7; y++) {
+              for (int col = 0; col < width; col++) {
+                const int px = x + col;
+                if (px >= 0 && px < 32 && (rows[y] & (1 << (width - 1 - col)))) {
+                  it.draw_pixel_at(px, y, Color::WHITE);
+                }
+              }
+            }
+            x += width + 1;
+          }
+        }
+        return true;
+      };
+      auto show_text = [&](const std::string &text) {
+        if (!draw_pixel_text(text)) {
+          print_text(text);
+        }
+      };
+      auto draw_digit = [&](int x, int value) {
+        static const uint8_t digits[10][7] = {
+          {0b1111, 0b1001, 0b1001, 0b1001, 0b1001, 0b1001, 0b1111},
+          {0b0010, 0b0110, 0b0010, 0b0010, 0b0010, 0b0010, 0b0111},
+          {0b1110, 0b0001, 0b0001, 0b1110, 0b1000, 0b1000, 0b1111},
+          {0b1110, 0b0001, 0b0001, 0b0110, 0b0001, 0b0001, 0b1110},
+          {0b1001, 0b1001, 0b1001, 0b1111, 0b0001, 0b0001, 0b0001},
+          {0b1111, 0b1000, 0b1000, 0b1110, 0b0001, 0b0001, 0b1110},
+          {0b0111, 0b1000, 0b1000, 0b1110, 0b1001, 0b1001, 0b0110},
+          {0b1111, 0b0001, 0b0010, 0b0010, 0b0100, 0b0100, 0b0100},
+          {0b0110, 0b1001, 0b1001, 0b0110, 0b1001, 0b1001, 0b0110},
+          {0b0110, 0b1001, 0b1001, 0b0111, 0b0001, 0b0001, 0b1110},
+        };
+
+        if (value < 0 || value > 9) {
+          return;
+        }
+        for (int y = 0; y < 7; y++) {
+          for (int col = 0; col < 4; col++) {
+            if (digits[value][y] & (1 << (3 - col))) {
+              it.draw_pixel_at(x + col, y, Color::WHITE);
+            }
+          }
+        }
+      };
+      auto draw_colon = [&](int x) {
+        it.draw_pixel_at(x, 2, Color::WHITE);
+        it.draw_pixel_at(x, 5, Color::WHITE);
+      };
+      auto draw_clock = [&](int hour, int minute, int second) {
+        draw_digit(0, hour / 10);
+        draw_digit(5, hour % 10);
+        draw_colon(10);
+        draw_digit(12, minute / 10);
+        draw_digit(17, minute % 10);
+        draw_colon(22);
+        draw_digit(24, second / 10);
+        draw_digit(28, second % 10);
+      };
 
       if (active_until(id(text_message_until)) && !id(text_message).empty()) {
-        print_text(id(text_message));
+        show_text(id(text_message));
         return;
       }
 
       if (active_until(id(media_message_until)) && !id(media_message).empty()) {
-        print_text(id(media_message));
+        show_text(id(media_message));
         return;
       }
 
       if (active_until(id(wifi_alert_until))) {
-        print_text("NO WIFI");
+        show_text("NO WIFI");
         return;
       }
 
@@ -434,9 +586,9 @@ display:
 
       auto now = id(ntp_time).now();
       if (now.is_valid()) {
-        it.strftime(0, 0, id(matrix_font), "%H:%M", now);
+        draw_clock(now.hour, now.minute, now.second);
       } else {
-        print_text("--:--");
+        show_text("--:--");
       }
 
 speaker:
