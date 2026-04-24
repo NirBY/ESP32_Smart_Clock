@@ -85,6 +85,10 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
+  - id: volume_beep_pending
+    type: bool
+    restore_value: no
+    initial_value: 'false'
 
 i2c:
   sda: GPIO21
@@ -280,6 +284,19 @@ text:
       - component.update: matrix_display
 
 interval:
+  - interval: 250ms
+    then:
+      - if:
+          condition:
+            lambda: |-
+              return id(volume_beep_pending);
+          then:
+            - lambda: |-
+                id(volume_beep_pending) = false;
+            - media_player.speaker.play_on_device_media_file:
+                media_file: volume_beep
+                announcement: true
+
   - interval: 30s
     then:
       - if:
@@ -668,9 +685,8 @@ media_player:
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_volume:
-      - media_player.speaker.play_on_device_media_file:
-          media_file: volume_beep
-          announcement: true
+      - lambda: |-
+          id(volume_beep_pending) = true;
     buffer_size: 12000
     announcement_pipeline:
       speaker: announcement_speaker
