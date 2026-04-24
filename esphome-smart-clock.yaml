@@ -1,0 +1,504 @@
+substitutions:
+  device_name: esp32-smart-clock
+  friendly_name: ESP32 Smart Clock
+
+esphome:
+  name: ${device_name}
+  friendly_name: ${friendly_name}
+  build_path: C:/Users/nirbe/.esphome/build/${device_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+  encryption:
+    key: !secret api_encryption_key
+  actions:
+    - action: show_message
+      variables:
+        message: string
+      then:
+        - lambda: |-
+            id(text_message) = message;
+            id(text_message_until) = message.empty() ? 0 : millis() + 10000;
+        - component.update: matrix_display
+    - action: clear_message
+      then:
+        - lambda: |-
+            id(text_message).clear();
+            id(text_message_until) = 0;
+        - component.update: matrix_display
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  ap:
+    ssid: "${friendly_name} Fallback"
+    password: !secret fallback_ap_password
+
+captive_portal:
+
+globals:
+  - id: text_message
+    type: std::string
+    restore_value: no
+    max_restore_data_length: 100
+    initial_value: '""'
+  - id: text_message_until
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: sensor_message_until
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: wifi_alert_until
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: date_message_until
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: media_message
+    type: std::string
+    restore_value: no
+    max_restore_data_length: 64
+    initial_value: '""'
+  - id: media_message_until
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+
+i2c:
+  sda: GPIO21
+  scl: GPIO22
+  scan: true
+
+spi:
+  clk_pin: GPIO18
+  mosi_pin: GPIO23
+
+i2s_audio:
+  i2s_lrclk_pin: GPIO27
+  i2s_bclk_pin: GPIO26
+
+font:
+  - file: "gfonts://Noto Sans Hebrew"
+    id: matrix_font
+    size: 6
+    glyphs:
+      - " "
+      - "!"
+      - "%"
+      - "/"
+      - ":"
+      - "-"
+      - "."
+      - "0"
+      - "1"
+      - "2"
+      - "3"
+      - "4"
+      - "5"
+      - "6"
+      - "7"
+      - "8"
+      - "9"
+      - "A"
+      - "B"
+      - "C"
+      - "D"
+      - "E"
+      - "F"
+      - "G"
+      - "H"
+      - "I"
+      - "J"
+      - "K"
+      - "L"
+      - "M"
+      - "N"
+      - "O"
+      - "P"
+      - "Q"
+      - "R"
+      - "S"
+      - "T"
+      - "U"
+      - "V"
+      - "W"
+      - "X"
+      - "Y"
+      - "Z"
+      - "a"
+      - "b"
+      - "c"
+      - "d"
+      - "e"
+      - "f"
+      - "g"
+      - "h"
+      - "i"
+      - "j"
+      - "k"
+      - "l"
+      - "m"
+      - "n"
+      - "o"
+      - "p"
+      - "q"
+      - "r"
+      - "s"
+      - "t"
+      - "u"
+      - "v"
+      - "w"
+      - "x"
+      - "y"
+      - "z"
+      - "א"
+      - "ב"
+      - "ג"
+      - "ד"
+      - "ה"
+      - "ו"
+      - "ז"
+      - "ח"
+      - "ט"
+      - "י"
+      - "כ"
+      - "ך"
+      - "ל"
+      - "מ"
+      - "ם"
+      - "נ"
+      - "ן"
+      - "ס"
+      - "ע"
+      - "פ"
+      - "ף"
+      - "צ"
+      - "ץ"
+      - "ק"
+      - "ר"
+      - "ש"
+      - "ת"
+
+time:
+  - platform: sntp
+    id: ntp_time
+    servers:
+      - 0.pool.ntp.org
+      - 1.pool.ntp.org
+      - 2.pool.ntp.org
+    update_interval: 1h
+    on_time:
+      - seconds: 0
+        then:
+          - if:
+              condition:
+                lambda: |-
+                  auto now = id(ntp_time).now();
+                  return now.is_valid()
+                    && id(alarm_enabled).state
+                    && now.hour == (int) id(alarm_hour).state
+                    && now.minute == (int) id(alarm_minute).state;
+              then:
+                - script.execute: alarm_triggered
+      - seconds: 0
+        minutes: 0
+        then:
+          - lambda: |-
+              id(date_message_until) = millis() + 3000;
+          - component.update: matrix_display
+
+script:
+  - id: alarm_triggered
+    mode: restart
+    then:
+      - lambda: |-
+          id(text_message) = "ALARM";
+          id(text_message_until) = millis() + 10000;
+      - component.update: matrix_display
+      - homeassistant.event:
+          event: esphome.alarm_triggered
+          data:
+            device: esp32-smart-clock
+
+sensor:
+  - platform: aht10
+    variant: AHT20
+    temperature:
+      name: "Temperature"
+      id: aht_temperature
+    humidity:
+      name: "Humidity"
+      id: aht_humidity
+    update_interval: 30s
+
+  - platform: bmp280_i2c
+    address: 0x76
+    temperature:
+      name: "BMP280 Temperature"
+      id: bmp_temperature
+      oversampling: 2x
+    pressure:
+      name: "Pressure"
+      id: bmp_pressure
+    update_interval: 30s
+
+text:
+  - platform: template
+    name: "Screen Message"
+    id: screen_message_text
+    icon: "mdi:message-text"
+    optimistic: true
+    min_length: 0
+    max_length: 100
+    mode: text
+    set_action:
+      - lambda: |-
+          id(text_message) = x;
+          id(text_message_until) = x.empty() ? 0 : millis() + 10000;
+      - component.update: matrix_display
+
+interval:
+  - interval: 30s
+    then:
+      - if:
+          condition:
+            not:
+              wifi.connected:
+          then:
+            - lambda: |-
+                id(wifi_alert_until) = millis() + 3000;
+            - component.update: matrix_display
+      - if:
+          condition:
+            lambda: |-
+              return !isnan(id(aht_temperature).state)
+                && !isnan(id(aht_humidity).state)
+                && !isnan(id(bmp_pressure).state);
+          then:
+            - lambda: |-
+                id(sensor_message_until) = millis() + 3000;
+            - component.update: matrix_display
+
+number:
+  - platform: template
+    name: "Display Brightness"
+    id: display_brightness
+    icon: "mdi:brightness-6"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 15
+    step: 1
+    initial_value: 3
+    set_action:
+      - lambda: |-
+          id(matrix_display).set_intensity((uint8_t) x);
+      - component.update: matrix_display
+
+  - platform: template
+    name: "Alarm Hour"
+    id: alarm_hour
+    icon: "mdi:clock-time-four-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 7
+
+  - platform: template
+    name: "Alarm Minute"
+    id: alarm_minute
+    icon: "mdi:clock-time-four-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 59
+    step: 1
+    initial_value: 0
+
+switch:
+  - platform: template
+    name: "Alarm Enabled"
+    id: alarm_enabled
+    icon: "mdi:alarm"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+display:
+  - platform: max7219digit
+    id: matrix_display
+    cs_pin: GPIO5
+    num_chips: 4
+    intensity: 3
+    scroll_enable: true
+    scroll_mode: CONTINUOUS
+    scroll_speed: 80ms
+    scroll_delay: 500ms
+    update_interval: 1s
+    lambda: |-
+      const uint32_t now_ms = millis();
+      auto active_until = [now_ms](uint32_t until) -> bool {
+        return (int32_t) (until - now_ms) > 0;
+      };
+      auto has_hebrew = [](const std::string &text) -> bool {
+        for (size_t i = 0; i + 1 < text.size(); i++) {
+          const uint8_t b0 = text[i];
+          const uint8_t b1 = text[i + 1];
+          if (b0 == 0xD7 && b1 >= 0x90 && b1 <= 0xAA) {
+            return true;
+          }
+        }
+        return false;
+      };
+      auto reverse_utf8 = [](const std::string &text) -> std::string {
+        std::vector<std::string> chars;
+        for (size_t i = 0; i < text.size();) {
+          size_t len = 1;
+          const uint8_t c = text[i];
+          if ((c & 0xE0) == 0xC0) {
+            len = 2;
+          } else if ((c & 0xF0) == 0xE0) {
+            len = 3;
+          } else if ((c & 0xF8) == 0xF0) {
+            len = 4;
+          }
+          if (i + len > text.size()) {
+            len = 1;
+          }
+          chars.push_back(text.substr(i, len));
+          i += len;
+        }
+
+        std::string out;
+        for (auto it = chars.rbegin(); it != chars.rend(); ++it) {
+          out += *it;
+        }
+        return out;
+      };
+      auto print_text = [&](const std::string &text) {
+        if (has_hebrew(text)) {
+          const std::string rtl = reverse_utf8(text);
+          it.print(0, 0, id(matrix_font), rtl.c_str());
+        } else {
+          it.print(0, 0, id(matrix_font), text.c_str());
+        }
+      };
+
+      if (active_until(id(text_message_until)) && !id(text_message).empty()) {
+        print_text(id(text_message));
+        return;
+      }
+
+      if (active_until(id(media_message_until)) && !id(media_message).empty()) {
+        print_text(id(media_message));
+        return;
+      }
+
+      if (active_until(id(wifi_alert_until))) {
+        print_text("NO WIFI");
+        return;
+      }
+
+      if (active_until(id(date_message_until))) {
+        auto date_now = id(ntp_time).now();
+        if (date_now.is_valid()) {
+          it.strftime(0, 0, id(matrix_font), "%a %d/%m", date_now);
+          return;
+        }
+      }
+
+      if (active_until(id(sensor_message_until))
+          && !isnan(id(aht_temperature).state)
+          && !isnan(id(aht_humidity).state)
+          && !isnan(id(bmp_pressure).state)) {
+        it.printf(0, 0, id(matrix_font), "%.1fC %.0f%% %.0fhPa",
+                  id(aht_temperature).state,
+                  id(aht_humidity).state,
+                  id(bmp_pressure).state);
+        return;
+      }
+
+      auto now = id(ntp_time).now();
+      if (now.is_valid()) {
+        it.strftime(0, 0, id(matrix_font), "%H:%M", now);
+      } else {
+        print_text("--:--");
+      }
+
+speaker:
+  - platform: i2s_audio
+    id: i2s_speaker
+    dac_type: external
+    i2s_dout_pin: GPIO25
+    channel: mono
+    sample_rate: 48000
+
+  - platform: mixer
+    id: audio_mixer
+    output_speaker: i2s_speaker
+    source_speakers:
+      - id: announcement_mixer_input
+      - id: media_mixer_input
+
+  - platform: resampler
+    id: announcement_speaker
+    output_speaker: announcement_mixer_input
+
+  - platform: resampler
+    id: media_speaker
+    output_speaker: media_mixer_input
+
+media_player:
+  - platform: speaker
+    name: "Speaker"
+    id: clock_speaker
+    on_play:
+      - lambda: |-
+          id(media_message) = "MUSIC";
+          id(media_message_until) = millis() + 10000;
+      - component.update: matrix_display
+    on_announcement:
+      - lambda: |-
+          id(media_message) = "SPEAKER";
+          id(media_message_until) = millis() + 10000;
+      - component.update: matrix_display
+    on_pause:
+      - lambda: |-
+          id(media_message).clear();
+          id(media_message_until) = 0;
+      - component.update: matrix_display
+    on_idle:
+      - lambda: |-
+          id(media_message).clear();
+          id(media_message_until) = 0;
+      - component.update: matrix_display
+    on_turn_off:
+      - lambda: |-
+          id(media_message).clear();
+          id(media_message_until) = 0;
+      - component.update: matrix_display
+    buffer_size: 50000
+    announcement_pipeline:
+      speaker: announcement_speaker
+      format: WAV
+      sample_rate: 16000
+      num_channels: 1
+    media_pipeline:
+      speaker: media_speaker
+      format: WAV
+      sample_rate: 48000
+      num_channels: 2
