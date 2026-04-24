@@ -115,6 +115,8 @@ Short English/number messages use a custom 3x7 pixel renderer that spreads the t
 
 Display brightness can be changed from Home Assistant with the `Display Brightness` number entity. `0` is dimmest, `15` is brightest.
 
+Brightness changes are sent directly to the MAX7219 chips at runtime and are also re-applied after boot when the restored Home Assistant value is available.
+
 ## Music Casting Options
 
 There are two supported music paths:

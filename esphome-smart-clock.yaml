@@ -6,6 +6,14 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   build_path: C:/Users/nirbe/.esphome/build/${device_name}
+  on_boot:
+    priority: -100
+    then:
+      - lambda: |-
+          if (!isnan(id(display_brightness).state)) {
+            id(matrix_display).intensity((uint8_t) id(display_brightness).state);
+          }
+      - component.update: matrix_display
 
 esp32:
   board: esp32dev
@@ -305,7 +313,7 @@ number:
     initial_value: 3
     set_action:
       - lambda: |-
-          id(matrix_display).set_intensity((uint8_t) x);
+          id(matrix_display).intensity((uint8_t) x);
       - component.update: matrix_display
 
   - platform: template
