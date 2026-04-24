@@ -84,6 +84,7 @@ Important limitations:
 - The alarm trigger sets the matrix to `ALARM` and fires an `esphome.alarm_triggered` event. Use a Home Assistant automation to play TTS or `media_player.play_media` on the `Speaker` entity.
 - To allow the device to fire Home Assistant events, open the ESPHome integration device settings in Home Assistant and enable "Allow the device to perform Home Assistant actions".
 - The ESPHome config uses the Google Font `Noto Sans Hebrew`, so first compile needs internet access from the ESPHome builder.
+- The BMP280 address is set near the top of `esphome-smart-clock.yaml` as `bmp280_address`. Most combo boards use `0x77`, but some use `0x76`.
 
 ## Display Behavior
 
@@ -640,12 +641,11 @@ If no I2C devices are found:
 - Check SCL is GPIO22.
 - Keep I2C wires short.
 
-If AHT20 works but BMP280 does not, change the BMP280 address in `esphome-smart-clock.yaml`:
+If AHT20 works but BMP280 does not, change the BMP280 address near the top of `esphome-smart-clock.yaml`:
 
 ```yaml
-sensor:
-  - platform: bmp280_i2c
-    address: 0x77
+substitutions:
+  bmp280_address: "0x76"
 ```
 
 Then compile and upload again.
@@ -683,6 +683,6 @@ If there is no sound:
   - `MD_MAX72XX::PAROLA_HW`
   - `MD_MAX72XX::GENERIC_HW`
 - If you have only one 8x8 MAX7219 module, change `MAX_DEVICES` from `4` to `1` in `src/main.cpp`, and `num_chips` from `4` to `1` in `esphome-smart-clock.yaml`.
-- If BMP280 is not found, check whether the board address is `0x76` or `0x77`. The PlatformIO firmware tries both. The ESPHome YAML currently uses `0x76`; change it to `0x77` if needed.
+- If BMP280 is not found, check whether the board address is `0x76` or `0x77`. The PlatformIO firmware tries both. The ESPHome YAML uses `bmp280_address` near the top of the file; change it to the address shown by the I2C scan if needed.
 - If AHT20 logs communication errors in ESPHome, keep `variant: AHT20` and check that the module is powered from 3V3 with SDA/SCL on GPIO21/GPIO22.
 - If audio is noisy, keep I2S wires short and add bulk capacitance near the amplifier.

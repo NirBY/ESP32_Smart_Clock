@@ -1,6 +1,7 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
+  bmp280_address: "0x77"
 
 esphome:
   name: ${device_name}
@@ -253,7 +254,7 @@ sensor:
     update_interval: 30s
 
   - platform: bmp280_i2c
-    address: 0x76
+    address: ${bmp280_address}
     temperature:
       name: "BMP280 Temperature"
       id: bmp_temperature
@@ -293,8 +294,7 @@ interval:
           condition:
             lambda: |-
               return !isnan(id(aht_temperature).state)
-                && !isnan(id(aht_humidity).state)
-                && !isnan(id(bmp_pressure).state);
+                && !isnan(id(aht_humidity).state);
           then:
             - lambda: |-
                 id(sensor_message_until) = millis() + 3000;
@@ -583,12 +583,17 @@ display:
 
       if (active_until(id(sensor_message_until))
           && !isnan(id(aht_temperature).state)
-          && !isnan(id(aht_humidity).state)
-          && !isnan(id(bmp_pressure).state)) {
-        it.printf(0, 0, id(matrix_font), "%.1fC %.0f%% %.0fhPa",
-                  id(aht_temperature).state,
-                  id(aht_humidity).state,
-                  id(bmp_pressure).state);
+          && !isnan(id(aht_humidity).state)) {
+        if (!isnan(id(bmp_pressure).state)) {
+          it.printf(0, 0, id(matrix_font), "%.1fC %.0f%% %.0fhPa",
+                    id(aht_temperature).state,
+                    id(aht_humidity).state,
+                    id(bmp_pressure).state);
+        } else {
+          it.printf(0, 0, id(matrix_font), "%.1fC %.0f%%",
+                    id(aht_temperature).state,
+                    id(aht_humidity).state);
+        }
         return;
       }
 
