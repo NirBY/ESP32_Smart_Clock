@@ -605,22 +605,35 @@ speaker:
     dac_type: external
     i2s_dout_pin: GPIO25
     channel: mono
-    sample_rate: 48000
+    sample_rate: 16000
+    bits_per_sample: 16bit
+    buffer_duration: 100ms
+    timeout: 250ms
 
   - platform: mixer
     id: audio_mixer
     output_speaker: i2s_speaker
     source_speakers:
       - id: announcement_mixer_input
+        buffer_duration: 50ms
+        timeout: 250ms
       - id: media_mixer_input
+        buffer_duration: 50ms
+        timeout: 250ms
 
   - platform: resampler
     id: announcement_speaker
     output_speaker: announcement_mixer_input
+    buffer_duration: 50ms
+    filters: 16
+    taps: 16
 
   - platform: resampler
     id: media_speaker
     output_speaker: media_mixer_input
+    buffer_duration: 50ms
+    filters: 16
+    taps: 16
 
 media_player:
   - platform: speaker
@@ -651,7 +664,7 @@ media_player:
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
-    buffer_size: 50000
+    buffer_size: 12000
     announcement_pipeline:
       speaker: announcement_speaker
       format: WAV
@@ -660,5 +673,5 @@ media_player:
     media_pipeline:
       speaker: media_speaker
       format: WAV
-      sample_rate: 48000
-      num_channels: 2
+      sample_rate: 16000
+      num_channels: 1

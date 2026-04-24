@@ -117,6 +117,8 @@ Display brightness can be changed from Home Assistant with the `Display Brightne
 
 Brightness changes are sent directly to the MAX7219 chips at runtime and are also re-applied after boot when the restored Home Assistant value is available.
 
+Audio playback is configured for low-memory stability on a normal ESP32 without PSRAM: mono, 16 kHz, smaller speaker buffers, and a smaller media-player buffer. This is best for TTS/announcements and simple Home Assistant audio. High-bitrate music streaming can still stress RAM; for direct music playback from phones/PCs, use the separate Bluetooth speaker firmware.
+
 ## Music Casting Options
 
 There are two supported music paths:
@@ -666,6 +668,7 @@ To test from Home Assistant, call TTS or play a WAV/MP3 URL to the `Speaker` med
 
 If there is no sound:
 
+- If logs show `Not enough memory` or `ESP_ERR_NO_MEM`, flash the latest ESPHome YAML. The current config uses a low-memory mono 16 kHz audio pipeline to reduce speaker cut-offs.
 - Check logs while playing audio.
 - Confirm the amplifier has 5V power.
 - Confirm all grounds are common.
