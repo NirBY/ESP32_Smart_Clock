@@ -20,6 +20,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-release:
     name: Build firmware
@@ -27,10 +30,10 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.13"
 
@@ -71,8 +74,26 @@ jobs:
       - name: Collect firmware artifacts
         run: |
           mkdir -p release
-          cp .esphome/build/esp32-smart-clock/.pioenvs/esp32-smart-clock/firmware.factory.bin release/esphome-smart-clock.factory.bin
-          cp .esphome/build/esp32-smart-clock/.pioenvs/esp32-smart-clock/firmware.ota.bin release/esphome-smart-clock.ota.bin
+          esphome_build_dir=""
+          for candidate in \
+            "build/esp32-smart-clock/.pioenvs/esp32-smart-clock" \
+            ".esphome/build/esp32-smart-clock/.pioenvs/esp32-smart-clock"
+          do
+            if [ -f "${candidate}/firmware.factory.bin" ] && [ -f "${candidate}/firmware.ota.bin" ]; then
+              esphome_build_dir="${candidate}"
+              break
+            fi
+          done
+
+          if [ -z "${esphome_build_dir}" ]; then
+            echo "ESPHome firmware artifacts were not found."
+            echo "Known build directories:"
+            find build .esphome -maxdepth 5 -type f -name 'firmware*.bin' -print 2>/dev/null || true
+            exit 1
+          fi
+
+          cp "${esphome_build_dir}/firmware.factory.bin" release/esphome-smart-clock.factory.bin
+          cp "${esphome_build_dir}/firmware.ota.bin" release/esphome-smart-clock.ota.bin
           cp .pio/build/esp32dev/firmware.bin release/platformio-hardware-test.bin
           cp .pio/build/bluetooth_speaker/firmware.bin release/bluetooth-speaker.bin
 

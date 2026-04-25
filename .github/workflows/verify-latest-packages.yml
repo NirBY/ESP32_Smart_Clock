@@ -1,0 +1,103 @@
+name: Verify latest packages
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
+jobs:
+  verify:
+    name: Build with latest packages
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.13"
+
+      - name: Install latest build tools
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install --upgrade platformio esphome
+
+      - name: Prepare ESPHome CI secrets
+        run: cp secrets.example.yaml secrets.yaml
+
+      - name: Use CI-local ESPHome build path
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path("esphome-smart-clock.yaml")
+          text = path.read_text(encoding="utf-8")
+          text = text.replace(
+              "build_path: C:/Users/nirbe/.esphome/build/${device_name}",
+              "build_path: build/${device_name}",
+          )
+          path.write_text(text, encoding="utf-8")
+          PY
+
+      - name: Validate ESPHome config
+        run: esphome config esphome-smart-clock.yaml
+
+      - name: Compile ESPHome smart clock firmware
+        run: esphome compile esphome-smart-clock.yaml
+
+      - name: Build PlatformIO hardware test firmware
+        run: pio run -e esp32dev
+
+      - name: Build PlatformIO Bluetooth speaker firmware
+        run: pio run -e bluetooth_speaker
+
+      - name: Write verification report
+        run: |
+          mkdir -p .github/reports
+          {
+            echo "# Latest Package Verification"
+            echo
+            echo "- Verified at: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+            echo "- Commit: ${GITHUB_SHA}"
+            echo
+            echo "## Tool Versions"
+            echo
+            echo '```text'
+            python --version
+            python -m pip --version
+            platformio --version
+            esphome version
+            echo '```'
+            echo
+            echo "## Result"
+            echo
+            echo "ESPHome validation, ESPHome compile, PlatformIO hardware test build, and PlatformIO Bluetooth speaker build all passed with the latest available Python packages."
+          } > .github/reports/latest-package-verify.md
+
+      - name: Create manual review pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          commit-message: "chore: verify latest package builds"
+          branch: automation/latest-package-verify
+          delete-branch: true
+          title: "chore: verify latest package builds"
+          body: |
+            ## Summary
+            - Verified the firmware builds with the latest available ESPHome and PlatformIO packages.
+            - Updated the package verification report for manual review.
+
+            ## Verification
+            - `esphome config esphome-smart-clock.yaml`
+            - `esphome compile esphome-smart-clock.yaml`
+            - `pio run -e esp32dev`
+            - `pio run -e bluetooth_speaker`
+          add-paths: .github/reports/latest-package-verify.md

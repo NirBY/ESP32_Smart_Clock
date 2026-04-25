@@ -20,24 +20,48 @@ esp32:
   board: esp32dev
   framework:
     type: esp-idf
+    advanced:
+      minimum_chip_revision: "3.1"
+      sram1_as_iram: true
 
 logger:
+  # DEBUG logging keeps more strings/buffers active and can steal CPU while audio
+  # is playing. INFO still keeps useful boot and troubleshooting messages.
+  level: DEBUG
+  logs:
+    audio: DEBUG
+    api: INFO
+    component: INFO
+    i2s_audio.speaker: DEBUG
+    media_player: DEBUG
+    ring_buffer: DEBUG
+    sensor: INFO
+    speaker: DEBUG
+    speaker_media_player: DEBUG
+    wifi: INFO
 
 api:
   encryption:
     key: !secret api_encryption_key
+  # Home Assistant is normally the only API client. Smaller queues/connections
+  # reduce RAM pressure on the non-PSRAM ESP32.
+  max_connections: 2
+  max_send_queue: 4
   actions:
     - action: show_message
       variables:
         message: string
       then:
         - lambda: |-
+            const float seconds = isnan(id(text_message_seconds).state) ? 10.0f : id(text_message_seconds).state;
+            ESP_LOGI("settings", "Screen message changed to '%s' for %.0f seconds", message.c_str(), seconds);
             id(text_message) = message;
-            id(text_message_until) = message.empty() ? 0 : millis() + 10000;
+            id(text_message_until) = message.empty() ? 0 : millis() + (uint32_t) (seconds * 1000.0f);
         - component.update: matrix_display
     - action: clear_message
       then:
         - lambda: |-
+            ESP_LOGI("settings", "Screen message cleared");
             id(text_message).clear();
             id(text_message_until) = 0;
         - component.update: matrix_display
@@ -55,6 +79,8 @@ wifi:
 captive_portal:
 
 globals:
+  # Temporary display state. Each *_until value stores a millis() deadline;
+  # the display lambda falls back to the clock after the deadline expires.
   - id: text_message
     type: std::string
     restore_value: no
@@ -85,6 +111,17 @@ globals:
     type: uint32_t
     restore_value: no
     initial_value: '0'
+  - id: last_sensor_message_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: last_wifi_alert_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  # Volume changes are handled in two steps. The media player's on_volume
+  # trigger sets this flag, and an interval plays the beep outside that trigger
+  # to avoid an ESPHome code-generation circular dependency.
   - id: volume_beep_pending
     type: bool
     restore_value: no
@@ -230,7 +267,8 @@ time:
         minutes: 0
         then:
           - lambda: |-
-              id(date_message_until) = millis() + 3000;
+              const float seconds = isnan(id(date_message_seconds).state) ? 3.0f : id(date_message_seconds).state;
+              id(date_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
           - component.update: matrix_display
 
 script:
@@ -238,8 +276,9 @@ script:
     mode: restart
     then:
       - lambda: |-
+          const float seconds = isnan(id(alarm_message_seconds).state) ? 10.0f : id(alarm_message_seconds).state;
           id(text_message) = "ALARM";
-          id(text_message_until) = millis() + 10000;
+          id(text_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
       - homeassistant.event:
           event: esphome.alarm_triggered
@@ -279,11 +318,16 @@ text:
     mode: text
     set_action:
       - lambda: |-
+          const float seconds = isnan(id(text_message_seconds).state) ? 10.0f : id(text_message_seconds).state;
+          ESP_LOGI("settings", "Screen Message changed to '%s' for %.0f seconds", x.c_str(), seconds);
           id(text_message) = x;
-          id(text_message_until) = x.empty() ? 0 : millis() + 10000;
+          id(text_message_until) = x.empty() ? 0 : millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
 
 interval:
+  # Play the volume feedback beep shortly after Home Assistant changes volume.
+  # Keeping this outside on_volume avoids referencing the embedded media file
+  # while the media_player component is still being generated.
   - interval: 250ms
     then:
       - if:
@@ -292,29 +336,46 @@ interval:
               return id(volume_beep_pending);
           then:
             - lambda: |-
+                ESP_LOGI("audio", "Playing volume feedback beep");
                 id(volume_beep_pending) = false;
             - media_player.speaker.play_on_device_media_file:
                 media_file: volume_beep
                 announcement: true
 
-  - interval: 30s
+  - interval: 1s
     then:
+      # Wi-Fi alert is periodic, not continuous, so the clock remains visible
+      # between short NO WIFI warnings.
       - if:
           condition:
-            not:
-              wifi.connected:
+            and:
+              - not:
+                  wifi.connected:
+              - lambda: |-
+                  const float interval_seconds = isnan(id(wifi_alert_interval_seconds).state)
+                    ? 30.0f
+                    : id(wifi_alert_interval_seconds).state;
+                  return (int32_t) (millis() - id(last_wifi_alert_ms)) >= (int32_t) (interval_seconds * 1000.0f);
           then:
             - lambda: |-
-                id(wifi_alert_until) = millis() + 3000;
+                const float seconds = isnan(id(wifi_alert_seconds).state) ? 3.0f : id(wifi_alert_seconds).state;
+                id(last_wifi_alert_ms) = millis();
+                id(wifi_alert_until) = millis() + (uint32_t) (seconds * 1000.0f);
             - component.update: matrix_display
+      # Sensor screen is also periodic. Pressure is still exposed to
+      # Home Assistant, but the matrix only shows temp + humidity.
       - if:
           condition:
             lambda: |-
-              return !isnan(id(aht_temperature).state)
-                && !isnan(id(aht_humidity).state);
+              const float interval_seconds = isnan(id(sensor_message_interval_seconds).state)
+                ? 30.0f
+                : id(sensor_message_interval_seconds).state;
+              return (int32_t) (millis() - id(last_sensor_message_ms)) >= (int32_t) (interval_seconds * 1000.0f);
           then:
             - lambda: |-
-                id(sensor_message_until) = millis() + 3000;
+                const float seconds = isnan(id(sensor_message_seconds).state) ? 3.0f : id(sensor_message_seconds).state;
+                id(last_sensor_message_ms) = millis();
+                id(sensor_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
             - component.update: matrix_display
 
 number:
@@ -330,8 +391,124 @@ number:
     initial_value: 3
     set_action:
       - lambda: |-
+          ESP_LOGI("settings", "Display Brightness changed to %.0f", x);
           id(matrix_display).intensity((uint8_t) x);
       - component.update: matrix_display
+
+  # Runtime-tunable display timing controls exposed to Home Assistant.
+  # Durations control how long a temporary screen stays visible; intervals
+  # control how often periodic status screens are requested.
+  - platform: template
+    name: "Screen Message Seconds"
+    id: text_message_seconds
+    icon: "mdi:timer-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 60
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Screen Message Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Media Message Seconds"
+    id: media_message_seconds
+    icon: "mdi:timer-music-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 60
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Media Message Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Alarm Message Seconds"
+    id: alarm_message_seconds
+    icon: "mdi:timer-alert-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 60
+    step: 1
+    initial_value: 10
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Alarm Message Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Wi-Fi Alert Seconds"
+    id: wifi_alert_seconds
+    icon: "mdi:timer-alert-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 30
+    step: 1
+    initial_value: 3
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Wi-Fi Alert Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Wi-Fi Alert Interval Seconds"
+    id: wifi_alert_interval_seconds
+    icon: "mdi:timer-sync-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 5
+    max_value: 300
+    step: 5
+    initial_value: 30
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Wi-Fi Alert Interval Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Date Message Seconds"
+    id: date_message_seconds
+    icon: "mdi:timer-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 30
+    step: 1
+    initial_value: 3
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Date Message Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Sensor Message Seconds"
+    id: sensor_message_seconds
+    icon: "mdi:timer-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 30
+    step: 1
+    initial_value: 3
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Sensor Message Seconds changed to %.0f", x);
+
+  - platform: template
+    name: "Sensor Message Interval Seconds"
+    id: sensor_message_interval_seconds
+    icon: "mdi:timer-sync-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 5
+    max_value: 300
+    step: 5
+    initial_value: 30
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Sensor Message Interval Seconds changed to %.0f", x);
 
   - platform: template
     name: "Alarm Hour"
@@ -343,6 +520,9 @@ number:
     max_value: 23
     step: 1
     initial_value: 7
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Alarm Hour changed to %.0f", x);
 
   - platform: template
     name: "Alarm Minute"
@@ -354,6 +534,9 @@ number:
     max_value: 59
     step: 1
     initial_value: 0
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Alarm Minute changed to %.0f", x);
 
 switch:
   - platform: template
@@ -362,6 +545,12 @@ switch:
     icon: "mdi:alarm"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Alarm Enabled changed to ON");
+    turn_off_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Alarm Enabled changed to OFF");
 
 display:
   - platform: max7219digit
@@ -373,12 +562,18 @@ display:
     scroll_mode: CONTINUOUS
     scroll_speed: 80ms
     scroll_delay: 500ms
-    update_interval: 1s
+    update_interval: 80ms
     lambda: |-
       const uint32_t now_ms = millis();
+
+      // Use signed subtraction so millis() wraparound does not make expired
+      // temporary screens look active again.
       auto active_until = [now_ms](uint32_t until) -> bool {
         return (int32_t) (until - now_ms) > 0;
       };
+
+      // ESPHome's font renderer draws left-to-right. For short Hebrew messages
+      // we reverse UTF-8 codepoints first so the text is readable on the matrix.
       auto has_hebrew = [](const std::string &text) -> bool {
         for (size_t i = 0; i + 1 < text.size(); i++) {
           const uint8_t b0 = text[i];
@@ -390,7 +585,12 @@ display:
         return false;
       };
       auto reverse_utf8 = [](const std::string &text) -> std::string {
-        std::vector<std::string> chars;
+        struct Utf8Slice {
+          size_t start;
+          size_t len;
+        };
+        Utf8Slice chars[100];
+        size_t char_count = 0;
         for (size_t i = 0; i < text.size();) {
           size_t len = 1;
           const uint8_t c = text[i];
@@ -404,18 +604,23 @@ display:
           if (i + len > text.size()) {
             len = 1;
           }
-          chars.push_back(text.substr(i, len));
+          if (char_count >= sizeof(chars) / sizeof(chars[0])) {
+            break;
+          }
+          chars[char_count++] = {i, len};
           i += len;
         }
 
         std::string out;
-        for (auto it = chars.rbegin(); it != chars.rend(); ++it) {
-          out += *it;
+        out.reserve(text.size());
+        for (size_t i = char_count; i > 0; i--) {
+          const auto &ch = chars[i - 1];
+          out.append(text, ch.start, ch.len);
         }
         return out;
       };
-      auto print_text = [&](const std::string &text) {
-        if (has_hebrew(text)) {
+      auto print_text = [&](const std::string &text, bool text_has_hebrew) {
+        if (text_has_hebrew) {
           const std::string rtl = reverse_utf8(text);
           it.print(0, 0, id(matrix_font), rtl.c_str());
         } else {
@@ -471,70 +676,220 @@ display:
           case '.': rows[6]=0b010; return 3;
           case ':': rows[2]=0b010; rows[5]=0b010; return 3;
           case '/': rows[0]=0b001; rows[1]=0b001; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b100; rows[6]=0b100; return 3;
-          case '%': rows[0]=0b101; rows[1]=0b001; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b100; rows[6]=0b101; return 3;
+          case '%': rows[0]=0b11001; rows[1]=0b11010; rows[2]=0b00100; rows[3]=0b01000; rows[4]=0b01011; rows[5]=0b10011; rows[6]=0b00000; return 5;
           default: return 0;
         }
       };
-      auto draw_pixel_text = [&](const std::string &text) -> bool {
-        if (text.empty() || has_hebrew(text)) {
+      auto draw_pixel_text = [&](const std::string &text, bool text_has_hebrew) -> bool {
+        if (text.empty() || text_has_hebrew) {
           return false;
         }
 
-        std::vector<int> widths;
+        // First measure every glyph. If any character is unsupported, let the
+        // ESPHome font renderer handle the whole string instead.
+        struct PixelGlyph {
+          size_t start;
+          size_t len;
+          int width;
+          char ascii;
+        };
+        PixelGlyph glyphs[100];
+        size_t glyph_count = 0;
         int text_width = 0;
-        for (char ch : text) {
+        for (size_t i = 0; i < text.size();) {
           uint8_t rows[7];
-          const int width = pixel_glyph(ch, rows);
+          char ascii = 0;
+          size_t len = 1;
+          int width = 0;
+
+          const uint8_t b0 = text[i];
+          if (b0 < 0x80) {
+            ascii = (char) b0;
+            width = pixel_glyph(ascii, rows);
+          } else {
+            return false;
+          }
+
           if (width == 0) {
             return false;
           }
-          widths.push_back(width);
+          if (glyph_count >= 100) {
+            return false;
+          }
+          glyphs[glyph_count++] = {i, len, width, ascii};
           text_width += width;
+          i += len;
         }
 
-        const int gaps = widths.size() > 1 ? widths.size() - 1 : 0;
-        if (text_width + gaps <= 32) {
-          const int extra = 32 - text_width - gaps;
-          int x = 0;
-          for (size_t i = 0; i < text.size(); i++) {
-            uint8_t rows[7];
-            const int width = pixel_glyph(text[i], rows);
-            for (int y = 0; y < 7; y++) {
-              for (int col = 0; col < width; col++) {
-                if (rows[y] & (1 << (width - 1 - col))) {
-                  it.draw_pixel_at(x + col, y, Color::WHITE);
-                }
+        const int gaps = glyph_count > 1 ? glyph_count - 1 : 0;
+        auto glyph_at = [&](size_t visual_index) -> PixelGlyph {
+          if (text_has_hebrew) {
+            return glyphs[glyph_count - 1 - visual_index];
+          }
+          return glyphs[visual_index];
+        };
+        auto draw_glyph = [&](int x, const PixelGlyph &glyph) {
+          uint8_t rows[7];
+          const int width = pixel_glyph(glyph.ascii, rows);
+          for (int y = 0; y < 7; y++) {
+            for (int col = 0; col < width; col++) {
+              const int px = x + col;
+              if (px >= 0 && px < 32 && (rows[y] & (1 << (width - 1 - col)))) {
+                it.draw_pixel_at(px, y, Color::WHITE);
               }
             }
-            if (i + 1 < text.size()) {
+          }
+        };
+
+        if (text_width + gaps <= 32) {
+          // Short messages are spread across all 32 columns so the display does
+          // not look like it is using only one side of the matrix.
+          const int extra = 32 - text_width - gaps;
+          int x = 0;
+          for (size_t i = 0; i < glyph_count; i++) {
+            const PixelGlyph glyph = glyph_at(i);
+            draw_glyph(x, glyph);
+            if (i + 1 < glyph_count) {
               const int spread = gaps > 0 ? extra / gaps + ((int) i < (extra % gaps) ? 1 : 0) : 0;
-              x += width + 1 + spread;
+              x += glyph.width + 1 + spread;
             }
           }
         } else {
+          // Longer messages use the same pixel glyphs but scroll manually. This
+          // keeps English/number text visually consistent with short messages.
           const int scroll_span = text_width + gaps + 33;
-          int x = 32 - ((now_ms / 120) % scroll_span);
-          for (size_t i = 0; i < text.size(); i++) {
-            uint8_t rows[7];
-            const int width = pixel_glyph(text[i], rows);
-            for (int y = 0; y < 7; y++) {
-              for (int col = 0; col < width; col++) {
-                const int px = x + col;
-                if (px >= 0 && px < 32 && (rows[y] & (1 << (width - 1 - col)))) {
-                  it.draw_pixel_at(px, y, Color::WHITE);
-                }
-              }
-            }
-            x += width + 1;
+          int x = 32 - ((now_ms / 80) % scroll_span);
+          for (size_t i = 0; i < glyph_count; i++) {
+            const PixelGlyph glyph = glyph_at(i);
+            draw_glyph(x, glyph);
+            x += glyph.width + 1;
           }
         }
         return true;
       };
+
+      // Prefer the custom full-width pixel renderer for supported ASCII text.
+      // Fall back to the font renderer for Hebrew and unsupported characters.
+      auto draw_hebrew_text = [&](const std::string &text) -> bool {
+        struct Utf8Slice {
+          size_t start;
+          size_t len;
+          int width;
+        };
+        Utf8Slice chars[100];
+        size_t char_count = 0;
+        int text_width = 0;
+
+        for (size_t i = 0; i < text.size();) {
+          size_t len = 1;
+          const uint8_t c = text[i];
+          if ((c & 0xE0) == 0xC0) {
+            len = 2;
+          } else if ((c & 0xF0) == 0xE0) {
+            len = 3;
+          } else if ((c & 0xF8) == 0xF0) {
+            len = 4;
+          }
+          if (i + len > text.size() || char_count >= sizeof(chars) / sizeof(chars[0])) {
+            return false;
+          }
+
+          const int glyph_width = (len == 1 && text[i] == ' ') ? 3 : 5;
+          chars[char_count++] = {i, len, glyph_width};
+          text_width += glyph_width;
+          i += len;
+        }
+
+        if (char_count == 0) {
+          return false;
+        }
+
+        // Render each UTF-8 character with the real Hebrew font, but place the
+        // characters ourselves. Short Hebrew messages fill the whole matrix;
+        // longer Hebrew messages scroll from right to left.
+        int x = 0;
+        const bool spread = char_count <= 7 && text_width + (int) char_count - 1 <= 32;
+        const int gaps = char_count > 1 ? (int) char_count - 1 : 0;
+        const int extra = spread ? 32 - text_width - gaps : 0;
+
+        if (!spread) {
+          const int scroll_span = text_width + gaps + 33;
+          x = 32 - ((now_ms / 80) % scroll_span);
+        }
+
+        for (size_t i = 0; i < char_count; i++) {
+          const auto &ch = chars[char_count - 1 - i];
+          std::string glyph;
+          glyph.reserve(ch.len);
+          glyph.append(text, ch.start, ch.len);
+
+          if (x > -8 && x < 32) {
+            it.print(x, 0, id(matrix_font), glyph.c_str());
+          }
+
+          if (i + 1 < char_count) {
+            const int spread_gap = spread && gaps > 0
+              ? extra / gaps + ((int) i < (extra % gaps) ? 1 : 0)
+              : 0;
+            x += ch.width + 1 + spread_gap;
+          }
+        }
+        return true;
+      };
+
       auto show_text = [&](const std::string &text) {
-        if (!draw_pixel_text(text)) {
-          print_text(text);
+        const bool text_has_hebrew = has_hebrew(text);
+        if (text_has_hebrew && draw_hebrew_text(text)) {
+          return;
+        }
+        if (!draw_pixel_text(text, text_has_hebrew)) {
+          print_text(text, text_has_hebrew);
         }
       };
+
+      auto draw_small_glyph = [&](int x, char ch) {
+        uint8_t rows[7];
+        const int width = pixel_glyph(ch, rows);
+        if (width == 0) {
+          return;
+        }
+        for (int y = 0; y < 7; y++) {
+          for (int col = 0; col < width; col++) {
+            if (rows[y] & (1 << (width - 1 - col))) {
+              it.draw_pixel_at(x + col, y, Color::WHITE);
+            }
+          }
+        }
+      };
+
+      auto draw_degree = [&](int x) {
+        it.draw_pixel_at(x, 0, Color::WHITE);
+        it.draw_pixel_at(x + 1, 0, Color::WHITE);
+        it.draw_pixel_at(x, 1, Color::WHITE);
+        it.draw_pixel_at(x + 1, 1, Color::WHITE);
+      };
+
+      // Fixed-width sensor screen. A string like "24C 57.4%" is too wide for
+      // the full-width text renderer and would scroll, so this draws the
+      // compact "24°C 57%" layout directly into known columns.
+      auto draw_sensor_screen = [&]() {
+        int temp = isnan(id(aht_temperature).state) ? 0 : (int) roundf(id(aht_temperature).state);
+        int humidity = isnan(id(aht_humidity).state) ? 0 : (int) roundf(id(aht_humidity).state);
+        temp = temp < 0 ? 0 : (temp > 99 ? 99 : temp);
+        humidity = humidity < 0 ? 0 : (humidity > 99 ? 99 : humidity);
+
+        draw_small_glyph(0, '0' + (temp / 10));
+        draw_small_glyph(4, '0' + (temp % 10));
+        draw_degree(8);
+        draw_small_glyph(11, 'C');
+
+        draw_small_glyph(17, '0' + (humidity / 10));
+        draw_small_glyph(21, '0' + (humidity % 10));
+        draw_small_glyph(27, '%');
+      };
+
+      // The clock uses a separate 4-pixel-wide digit set so HH:MM:SS fills the
+      // matrix exactly without relying on font metrics.
       auto draw_digit = [&](int x, int value) {
         static const uint8_t digits[10][7] = {
           {0b1111, 0b1001, 0b1001, 0b1001, 0b1001, 0b1001, 0b1111},
@@ -575,6 +930,8 @@ display:
         draw_digit(28, second % 10);
       };
 
+      // Display priority: the first active branch wins. This keeps explicit
+      // Home Assistant messages above automatic status screens.
       if (active_until(id(text_message_until)) && !id(text_message).empty()) {
         show_text(id(text_message));
         return;
@@ -590,6 +947,8 @@ display:
         return;
       }
 
+      // The date screen only renders after NTP is valid. If time is not ready,
+      // it falls through to the normal clock fallback below.
       if (active_until(id(date_message_until))) {
         auto date_now = id(ntp_time).now();
         if (date_now.is_valid()) {
@@ -598,17 +957,15 @@ display:
         }
       }
 
-      if (active_until(id(sensor_message_until))
-          && !isnan(id(aht_temperature).state)
-          && !isnan(id(aht_humidity).state)) {
-        char sensor_text[16];
-        snprintf(sensor_text, sizeof(sensor_text), "%.0fC %.1f%%",
-                 id(aht_temperature).state,
-                 id(aht_humidity).state);
-        show_text(sensor_text);
+      // Sensor values use a fixed, non-scrolling layout. Missing readings show
+      // as 00°C 00% instead of hiding the sensor screen.
+      if (active_until(id(sensor_message_until))) {
+        draw_sensor_screen();
         return;
       }
 
+      // Default display. If NTP has not synced yet, show an obvious placeholder
+      // instead of stale or invalid time.
       auto now = id(ntp_time).now();
       if (now.is_valid()) {
         draw_clock(now.hour, now.minute, now.second);
@@ -617,14 +974,18 @@ display:
       }
 
 speaker:
+  # Audio is split into announcement and media pipelines, then mixed back into
+  # one physical I2S speaker. Announcements can interrupt/duck media without
+  # changing the main playback path.
   - platform: i2s_audio
     id: i2s_speaker
     dac_type: external
     i2s_dout_pin: GPIO25
-    channel: mono
+    channel: right
     sample_rate: 16000
     bits_per_sample: 16bit
-    buffer_duration: 100ms
+    i2s_comm_fmt: stand_msb
+    buffer_duration: 500ms
     timeout: 250ms
 
   - platform: mixer
@@ -657,35 +1018,50 @@ media_player:
     name: "Speaker"
     id: clock_speaker
     files:
+      # Tiny local WAV used for volume feedback. It plays as an announcement so
+      # the user hears the current volume immediately after changing it.
       - id: volume_beep
         file: media/volume-beep.wav
     on_play:
       - lambda: |-
+          const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;
+          ESP_LOGI("audio", "Media playback started: media_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms");
           id(media_message) = "MUSIC";
-          id(media_message_until) = millis() + 10000;
+          id(media_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
     on_announcement:
       - lambda: |-
+          const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;
+          ESP_LOGI("audio", "Announcement playback started: announcement_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms");
           id(media_message) = "SPEAKER";
-          id(media_message_until) = millis() + 10000;
+          id(media_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
     on_pause:
       - lambda: |-
+          ESP_LOGI("audio", "Media playback paused");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_idle:
       - lambda: |-
+          ESP_LOGI("audio", "Media player idle");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_turn_off:
       - lambda: |-
+          ESP_LOGI("audio", "Media player turned off");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_volume:
       - lambda: |-
+          ESP_LOGI("settings", "Speaker volume changed to %.0f%%", x * 100.0f);
+          if (millis() < 15000) {
+            return;
+          }
+          // Defer actual playback to the 250ms interval above. Calling
+          // play_on_device_media_file directly here creates a codegen cycle.
           id(volume_beep_pending) = true;
     buffer_size: 12000
     announcement_pipeline:
