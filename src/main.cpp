@@ -6,6 +6,7 @@
 #include <MD_MAX72xx.h>
 #include <driver/i2s.h>
 #include <math.h>
+#include "hebrew_display_5x7.h"
 
 // =========================
 // Pin map - ESP32 30 pin
@@ -107,32 +108,7 @@ void playTone(int freq, int durationMs, int amplitude = 2500) {
 // =========================
 // Display helpers
 // =========================
-void displayScrollText(const String &text, uint16_t speedMs = 55) {
-  mx.clear();
-
-  uint8_t charWidth;
-  uint8_t cBuf[8];
-
-  for (uint16_t i = 0; i < text.length(); i++) {
-    charWidth = mx.getChar(text[i], sizeof(cBuf) / sizeof(cBuf[0]), cBuf);
-
-    for (uint8_t col = 0; col < charWidth + 1; col++) {
-      mx.transform(MD_MAX72XX::TSL);
-      if (col < charWidth) {
-        mx.setColumn(0, cBuf[col]);
-      } else {
-        mx.setColumn(0, 0);
-      }
-      delay(speedMs);
-    }
-  }
-
-  for (uint8_t i = 0; i < mx.getColumnCount(); i++) {
-    mx.transform(MD_MAX72XX::TSL);
-    mx.setColumn(0, 0);
-    delay(speedMs);
-  }
-}
+// Hebrew text rendering and scrolling is handled by hebrew_display_5x7.h
 
 void i2cScan() {
   Serial.println("I2C scan start...");
@@ -183,7 +159,7 @@ void setup() {
   mx.begin();
   mx.control(MD_MAX72XX::INTENSITY, 3); // brightness 0-15
   mx.clear();
-  displayScrollText("START");
+  scrollMixedTextRTL(mx, "שלום...", 45);
 
   initSensors();
   initI2S();
@@ -220,14 +196,14 @@ void loop() {
 
   String msg;
   if (ahtOk) {
-    msg = String(tempAht, 1) + "C " + String(humidity, 0) + "%";
+    msg = "טמפ " + String(tempAht, 1) + "C לחות " + String(humidity, 0) + "%";
   } else if (bmpOk) {
-    msg = String(tempBmp, 1) + "C " + String(pressure, 0) + "hPa";
+    msg = "טמפ " + String(tempBmp, 1) + "C לחץ " + String(pressure, 0) + "hPa";
   } else {
-    msg = "NO SENSOR";
+    msg = "אין חיישנים";
   }
 
-  displayScrollText(msg);
+  scrollMixedTextRTL(mx, msg, 45);
   playTone(1200, 80);
   delay(3000);
 }

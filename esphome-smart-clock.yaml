@@ -586,6 +586,43 @@ display:
         return (int32_t) (until - now_ms) > 0;
       };
 
+      auto get_scroll_x = [&now_ms](const std::string &text, int text_width, int gaps, bool is_rtl) -> int {
+        static std::string last_scrolled_text = "";
+        static uint32_t scroll_start_ms = 0;
+        static uint32_t last_called_ms = 0;
+
+        if (text != last_scrolled_text || (now_ms - last_called_ms) > 250) {
+          last_scrolled_text = text;
+          scroll_start_ms = now_ms;
+        }
+        last_called_ms = now_ms;
+
+        const int W = text_width + gaps;
+        const int max_scroll = W - 32;
+        if (max_scroll <= 0) {
+          return is_rtl ? 32 - W : 0;
+        }
+
+        const int pause_frames = 15; // 1.2 seconds pause
+        const int total_frames = pause_frames + max_scroll + pause_frames;
+        const int frame = ((now_ms - scroll_start_ms) / 80) % total_frames;
+
+        int scroll_amount = 0;
+        if (frame < pause_frames) {
+          scroll_amount = 0;
+        } else if (frame < pause_frames + max_scroll) {
+          scroll_amount = frame - pause_frames;
+        } else {
+          scroll_amount = max_scroll;
+        }
+
+        if (is_rtl) {
+          return 32 - W + scroll_amount;
+        } else {
+          return 0 - scroll_amount;
+        }
+      };
+
       // ESPHome's font renderer draws left-to-right. For short Hebrew messages
       // we reverse UTF-8 codepoints first so the text is readable on the matrix.
       auto has_hebrew = [](const std::string &text) -> bool {
@@ -772,7 +809,7 @@ display:
           // Longer messages use the same pixel glyphs but scroll manually. This
           // keeps English/number text visually consistent with short messages.
           const int scroll_span = text_width + gaps + 33;
-          int x = 32 - ((now_ms / 80) % scroll_span);
+          int x = get_scroll_x(text, text_width, gaps, false);
           for (size_t i = 0; i < glyph_count; i++) {
             const PixelGlyph glyph = glyph_at(i);
             draw_glyph(x, glyph);
@@ -798,38 +835,55 @@ display:
         return 0;
       };
 
-      auto hebrew_pixel_glyph = [](uint32_t cp, uint8_t rows[7]) -> int {
-        for (int i = 0; i < 7; i++) {
-          rows[i] = 0;
+      auto hebrew_pixel_columns = [](uint32_t cp, uint8_t columns[8]) -> int {
+        for (int i = 0; i < 8; i++) {
+          columns[i] = 0;
         }
+        auto trim_columns = [&]() -> int {
+          int first = 0;
+          while (first < 8 && columns[first] == 0) first++;
+          int last = 7;
+          while (last >= first && columns[last] == 0) last--;
+          if (first > last) {
+            return 0;
+          }
+          int out = 0;
+          for (int i = first; i <= last; i++) {
+            columns[out++] = columns[i];
+          }
+          for (int i = out; i < 8; i++) {
+            columns[i] = 0;
+          }
+          return out;
+        };
         switch (cp) {
-          case 0x05D0: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0101; rows[5]=0b1001; rows[6]=0b1001; return 4; // alef
-          case 0x05D1: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1111; return 4; // bet
-          case 0x05D2: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0010; rows[4]=0b0100; rows[5]=0b1000; rows[6]=0b1000; return 4; // gimel
-          case 0x05D3: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // dalet
-          case 0x05D4: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b1001; rows[5]=0b1001; rows[6]=0b1001; return 4; // he
-          case 0x05D5: rows[0]=0b010; rows[1]=0b010; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3; // vav
-          case 0x05D6: rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3; // zayin
-          case 0x05D7: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1001; rows[4]=0b1001; rows[5]=0b1001; rows[6]=0b1001; return 4; // het
-          case 0x05D8: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b1001; rows[6]=0b1111; return 4; // tet
-          case 0x05D9: rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b001; rows[4]=0b001; rows[5]=0b000; rows[6]=0b000; return 3; // yod
-          case 0x05DA: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // final kaf
-          case 0x05DB: rows[0]=0b1110; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1110; return 4; // kaf
-          case 0x05DC: rows[0]=0b0010; rows[1]=0b0010; rows[2]=0b0010; rows[3]=0b0110; rows[4]=0b1010; rows[5]=0b1010; rows[6]=0b0110; return 4; // lamed
-          case 0x05DD: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1001; rows[4]=0b1001; rows[5]=0b1001; rows[6]=0b1111; return 4; // final mem
-          case 0x05DE: rows[0]=0b1110; rows[1]=0b1001; rows[2]=0b0001; rows[3]=0b0010; rows[4]=0b0100; rows[5]=0b1000; rows[6]=0b1111; return 4; // mem
-          case 0x05DF: rows[0]=0b010; rows[1]=0b010; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3; // final nun
-          case 0x05E0: rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b001; rows[4]=0b001; rows[5]=0b001; rows[6]=0b111; return 3; // nun
-          case 0x05E1: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1001; rows[4]=0b1001; rows[5]=0b0001; rows[6]=0b1110; return 4; // samekh
-          case 0x05E2: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1111; return 4; // ayin
-          case 0x05E3: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // final pe
-          case 0x05E4: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1110; return 4; // pe
-          case 0x05E5: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // final tsadi
-          case 0x05E6: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1111; return 4; // tsadi
-          case 0x05E7: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // qof
-          case 0x05E8: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // resh
-          case 0x05E9: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1111; rows[4]=0b0001; rows[5]=0b1001; rows[6]=0b1111; return 4; // shin
-          case 0x05EA: rows[0]=0b1111; rows[1]=0b0101; rows[2]=0b0101; rows[3]=0b0101; rows[4]=0b0101; rows[5]=0b0101; rows[6]=0b0101; return 4; // tav
+          case 0x05D0: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x3a; columns[4]=0x04; columns[5]=0x08; columns[6]=0x18; columns[7]=0x26; return trim_columns(); // alef
+          case 0x05D1: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x22; columns[4]=0x22; columns[5]=0x22; columns[6]=0x3e; columns[7]=0x20; return trim_columns(); // bet
+          case 0x05D2: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x32; columns[6]=0x0a; columns[7]=0x3e; return trim_columns(); // gimel
+          case 0x05D3: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x02; columns[5]=0x02; columns[6]=0x3e; columns[7]=0x02; return trim_columns(); // dalet
+          case 0x05D4: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x3a; columns[5]=0x02; columns[6]=0x02; columns[7]=0x3e; return trim_columns(); // he
+          case 0x05D5: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x00; columns[6]=0x02; columns[7]=0x3e; return trim_columns(); // vav
+          case 0x05D6: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x02; columns[5]=0x3a; columns[6]=0x06; columns[7]=0x02; return trim_columns(); // zayin
+          case 0x05D7: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x3e; columns[5]=0x02; columns[6]=0x02; columns[7]=0x3e; return trim_columns(); // het
+          case 0x05D8: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x3e; columns[5]=0x20; columns[6]=0x22; columns[7]=0x3e; return trim_columns(); // tet
+          case 0x05D9: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x00; columns[6]=0x02; columns[7]=0x06; return trim_columns(); // yod
+          case 0x05DA: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x02; columns[6]=0x02; columns[7]=0x7e; return trim_columns(); // final kaf
+          case 0x05DB: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x22; columns[6]=0x22; columns[7]=0x3e; return trim_columns(); // kaf
+          case 0x05DC: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x03; columns[5]=0x22; columns[6]=0x12; columns[7]=0x0e; return trim_columns(); // lamed
+          case 0x05DD: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x3e; columns[5]=0x22; columns[6]=0x22; columns[7]=0x3e; return trim_columns(); // final mem
+          case 0x05DE: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x3e; columns[5]=0x04; columns[6]=0x22; columns[7]=0x3e; return trim_columns(); // mem
+          case 0x05DF: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x00; columns[6]=0x02; columns[7]=0x7e; return trim_columns(); // final nun
+          case 0x05E0: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x20; columns[6]=0x22; columns[7]=0x3e; return trim_columns(); // nun
+          case 0x05E1: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x1e; columns[5]=0x22; columns[6]=0x22; columns[7]=0x1e; return trim_columns(); // samekh
+          case 0x05E2: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x4e; columns[5]=0x50; columns[6]=0x22; columns[7]=0x1e; return trim_columns(); // ayin
+          case 0x05E3: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x02; columns[5]=0x06; columns[6]=0x02; columns[7]=0x7e; return trim_columns(); // final pe
+          case 0x05E4: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x00; columns[5]=0x22; columns[6]=0x22; columns[7]=0x3e; return trim_columns(); // pe
+          case 0x05E5: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x06; columns[5]=0x18; columns[6]=0x2a; columns[7]=0x46; return trim_columns(); // final tsadi
+          case 0x05E6: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x22; columns[5]=0x24; columns[6]=0x28; columns[7]=0x36; return trim_columns(); // tsadi
+          case 0x05E7: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x72; columns[5]=0x02; columns[6]=0x22; columns[7]=0x1e; return trim_columns(); // qof
+          case 0x05E8: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x02; columns[5]=0x02; columns[6]=0x02; columns[7]=0x3e; return trim_columns(); // resh
+          case 0x05E9: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x3e; columns[4]=0x28; columns[5]=0x2e; columns[6]=0x20; columns[7]=0x3e; return trim_columns(); // shin
+          case 0x05EA: columns[0]=0x00; columns[1]=0x00; columns[2]=0x00; columns[3]=0x00; columns[4]=0x20; columns[5]=0x3e; columns[6]=0x02; columns[7]=0x3e; return trim_columns(); // tav
           default: return 0;
         }
       };
@@ -850,67 +904,123 @@ display:
         for (size_t i = 0; i < text.size();) {
           size_t len = 1;
           const uint8_t c = text[i];
-          if ((c & 0xE0) == 0xC0) {
-            len = 2;
-          } else if ((c & 0xF0) == 0xE0) {
-            len = 3;
-          } else if ((c & 0xF8) == 0xF0) {
-            len = 4;
-          }
-          if (i + len > text.size() || char_count >= sizeof(chars) / sizeof(chars[0])) {
-            return false;
-          }
+          if ((c & 0xE0) == 0xC0) len = 2;
+          else if ((c & 0xF0) == 0xE0) len = 3;
+          else if ((c & 0xF8) == 0xF0) len = 4;
+          if (i + len > text.size() || char_count >= sizeof(chars) / sizeof(chars[0])) return false;
 
           const uint32_t codepoint = utf8_codepoint(text, i, len);
-          uint8_t rows[7];
-          const int glyph_width = codepoint == ' ' ? 2 : hebrew_pixel_glyph(codepoint, rows);
-          if (glyph_width == 0) {
-            return false;
-          }
+          uint8_t glyph_data[8] = {0};
+          int glyph_width = 0;
+          if (codepoint == ' ') glyph_width = 2;
+          else if (codepoint < 0x80) glyph_width = pixel_glyph((char)codepoint, glyph_data);
+          else glyph_width = hebrew_pixel_columns(codepoint, glyph_data);
+          
+          if (glyph_width == 0) return false;
           chars[char_count++] = {i, len, glyph_width, codepoint};
           text_width += glyph_width;
           i += len;
         }
+        if (char_count == 0) return false;
 
-        if (char_count == 0) {
-          return false;
+        // Bidi fix: reverse contiguous blocks of LTR characters so they display left-to-right
+        size_t ltr_start = 0;
+        bool in_ltr = false;
+        for (size_t i = 0; i <= char_count; i++) {
+          bool is_ltr_char = i < char_count && (chars[i].codepoint < 0x05D0);
+          if (is_ltr_char && !in_ltr) {
+            ltr_start = i;
+            in_ltr = true;
+          } else if (!is_ltr_char && in_ltr) {
+            size_t ltr_end = i;
+            size_t actual_start = ltr_start;
+            while (actual_start < ltr_end && chars[actual_start].codepoint == ' ') actual_start++;
+            while (ltr_end > actual_start && chars[ltr_end - 1].codepoint == ' ') ltr_end--;
+            for (size_t a = actual_start, b = ltr_end - 1; a < b; a++, b--) std::swap(chars[a], chars[b]);
+            in_ltr = false;
+          }
         }
 
-        // Short Hebrew messages fill the whole matrix; longer Hebrew messages
-        // scroll from right to left.
-        int x = 0;
-        const int gaps = char_count > 1 ? (int) char_count - 1 : 0;
-        const bool spread = text_width + gaps <= 32;
-        const int extra = spread ? 32 - text_width - gaps : 0;
-
-        if (!spread) {
-          const int scroll_span = text_width + gaps + 33;
-          x = -text_width - gaps + ((now_ms / 80) % scroll_span);
-        }
-
-        for (size_t i = 0; i < char_count; i++) {
-          const auto &ch = chars[char_count - 1 - i];
-          uint8_t rows[7];
-          const int width = ch.codepoint == ' ' ? 2 : hebrew_pixel_glyph(ch.codepoint, rows);
-          for (int y = 0; y < 7; y++) {
-            for (int col = 0; col < width; col++) {
-              const int px = x + col;
-              if (px >= 0 && px < 32 && (rows[y] & (1 << (width - 1 - col)))) {
-                it.draw_pixel_at(px, y, Color::WHITE);
+        uint8_t columns[768];
+        int column_count = 0;
+        auto append_blank_columns = [&](int count) -> bool {
+          for (int i = 0; i < count; i++) {
+            if (column_count >= (int) (sizeof(columns) / sizeof(columns[0]))) {
+              return false;
+            }
+            columns[column_count++] = 0;
+          }
+          return true;
+        };
+        auto append_rows_as_columns = [&](const uint8_t rows[7], int width) -> bool {
+          for (int col = 0; col < width; col++) {
+            if (column_count >= (int) (sizeof(columns) / sizeof(columns[0]))) {
+              return false;
+            }
+            uint8_t column = 0;
+            for (int y = 0; y < 7; y++) {
+              if (rows[y] & (1 << (width - 1 - col))) {
+                column |= (1 << y);
               }
             }
+            columns[column_count++] = column;
+          }
+          return true;
+        };
+        auto append_raw_columns = [&](const uint8_t raw_columns[8], int width) -> bool {
+          for (int i = 0; i < width; i++) {
+            if (column_count >= (int) (sizeof(columns) / sizeof(columns[0]))) {
+              return false;
+            }
+            columns[column_count++] = raw_columns[i];
+          }
+          return true;
+        };
+
+        for (size_t visual_index = 0; visual_index < char_count; visual_index++) {
+          const auto &ch = chars[char_count - 1 - visual_index];
+          uint8_t glyph_data[8] = {0};
+          int width = 0;
+          bool raw_columns = false;
+          if (ch.codepoint == ' ') width = 2;
+          else if (ch.codepoint < 0x80) width = pixel_glyph((char)ch.codepoint, glyph_data);
+          else {
+            width = hebrew_pixel_columns(ch.codepoint, glyph_data);
+            raw_columns = true;
           }
 
-          if (i + 1 < char_count) {
-            const int spread_gap = spread && gaps > 0
-              ? extra / gaps + ((int) i < (extra % gaps) ? 1 : 0)
-              : 0;
-            x += ch.width + 1 + spread_gap;
+          if (ch.codepoint == ' ') {
+            if (!append_blank_columns(width)) {
+              return false;
+            }
+          } else if (raw_columns) {
+            if (!append_raw_columns(glyph_data, width)) {
+              return false;
+            }
+          } else if (!append_rows_as_columns(glyph_data, width)) {
+            return false;
+          }
+          if (visual_index + 1 < char_count && !append_blank_columns(1)) {
+            return false;
+          }
+        }
+
+        const bool scroll = column_count > 32;
+        const int offset = scroll ? -get_scroll_x(text, column_count, 0, true) : 0;
+        const int start_x = scroll ? 0 : 32 - column_count;
+        for (int x = 0; x < 32; x++) {
+          const int src = scroll ? offset + x : x - start_x;
+          if (src < 0 || src >= column_count) {
+            continue;
+          }
+          for (int y = 0; y < 7; y++) {
+            if (columns[src] & (1 << y)) {
+              it.draw_pixel_at(x, y, Color::WHITE);
+            }
           }
         }
         return true;
       };
-
       auto show_text = [&](const std::string &text) {
         const bool text_has_hebrew = has_hebrew(text);
         if (text_has_hebrew && draw_hebrew_text(text)) {
@@ -943,63 +1053,24 @@ display:
         it.draw_pixel_at(x + 1, 1, Color::WHITE);
       };
 
-      auto draw_tiny_digit = [&](int x, int value) {
-        static const uint8_t digits[10][5] = {
-          {0b11, 0b11, 0b11, 0b11, 0b11},
-          {0b01, 0b01, 0b01, 0b01, 0b01},
-          {0b11, 0b01, 0b11, 0b10, 0b11},
-          {0b11, 0b01, 0b11, 0b01, 0b11},
-          {0b10, 0b10, 0b11, 0b01, 0b01},
-          {0b11, 0b10, 0b11, 0b01, 0b11},
-          {0b11, 0b10, 0b11, 0b11, 0b11},
-          {0b11, 0b01, 0b01, 0b01, 0b01},
-          {0b11, 0b11, 0b11, 0b11, 0b11},
-          {0b11, 0b11, 0b11, 0b01, 0b11},
-        };
-        if (value < 0 || value > 9) {
-          return;
-        }
-        for (int y = 0; y < 5; y++) {
-          for (int col = 0; col < 2; col++) {
-            if (digits[value][y] & (1 << (1 - col))) {
-              it.draw_pixel_at(x + col, y + 1, Color::WHITE);
-            }
-          }
-        }
-      };
-
-      auto draw_tiny_percent = [&](int x) {
-        it.draw_pixel_at(x, 1, Color::WHITE);
-        it.draw_pixel_at(x + 1, 2, Color::WHITE);
-        it.draw_pixel_at(x, 4, Color::WHITE);
-        it.draw_pixel_at(x + 1, 5, Color::WHITE);
-      };
-
-      // Fixed-width sensor screen. Draw "24°C 57.44%" without pressure and
-      // without scrolling.
+      // Fixed-width sensor screen. Compact layout.
       auto draw_sensor_screen = [&]() {
         int temp = isnan(id(aht_temperature).state) ? 0 : (int) roundf(id(aht_temperature).state);
-        int humidity_x100 = isnan(id(aht_humidity).state) ? 0 : (int) roundf(id(aht_humidity).state * 100.0f);
+        int humidity = isnan(id(aht_humidity).state) ? 0 : (int) roundf(id(aht_humidity).state);
         temp = temp < 0 ? 0 : (temp > 99 ? 99 : temp);
-        humidity_x100 = humidity_x100 < 0 ? 0 : (humidity_x100 > 9999 ? 9999 : humidity_x100);
+        humidity = humidity < 0 ? 0 : (humidity > 99 ? 99 : humidity);
 
+        // Temp left-aligned
         draw_small_glyph(0, '0' + (temp / 10));
         draw_small_glyph(4, '0' + (temp % 10));
         draw_degree(8);
         draw_small_glyph(11, 'C');
 
-        const int humidity_int = humidity_x100 / 100;
-        const int humidity_dec = humidity_x100 % 100;
-        draw_tiny_digit(16, humidity_int / 10);
-        draw_tiny_digit(19, humidity_int % 10);
-        it.draw_pixel_at(22, 6, Color::WHITE);
-        draw_tiny_digit(24, humidity_dec / 10);
-        draw_tiny_digit(27, humidity_dec % 10);
-        draw_tiny_percent(30);
+        // Humidity right-aligned with standard % sign
+        draw_small_glyph(18, '0' + (humidity / 10));
+        draw_small_glyph(22, '0' + (humidity % 10));
+        draw_small_glyph(27, '%');
       };
-
-      // The clock uses a separate 4-pixel-wide digit set so HH:MM:SS fills the
-      // matrix exactly without relying on font metrics.
       auto draw_digit = [&](int x, int value) {
         static const uint8_t digits[10][7] = {
           {0b1111, 0b1001, 0b1001, 0b1001, 0b1001, 0b1001, 0b1111},
