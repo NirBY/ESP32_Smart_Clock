@@ -126,6 +126,10 @@ globals:
     type: bool
     restore_value: no
     initial_value: 'false'
+  - id: audio_playback_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
 
 i2c:
   sda: GPIO21
@@ -336,11 +340,21 @@ interval:
               return id(volume_beep_pending);
           then:
             - lambda: |-
-                ESP_LOGI("audio", "Playing volume feedback beep");
+                if (id(audio_playback_active) || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_PLAYING || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING) {
+                  ESP_LOGI("audio", "Skipping volume feedback beep while audio is active (state=%d)", (int)id(clock_speaker).state);
+                  id(volume_beep_pending) = false;
+                  return;
+                }
+                ESP_LOGI("audio", "Playing volume feedback beep (audio_playback_active=false, state=%d)", (int)id(clock_speaker).state);
                 id(volume_beep_pending) = false;
-            - media_player.speaker.play_on_device_media_file:
-                media_file: volume_beep
-                announcement: true
+            - if:
+                condition:
+                  lambda: |-
+                    return !id(audio_playback_active) && id(clock_speaker).state != media_player::MEDIA_PLAYER_STATE_PLAYING && id(clock_speaker).state != media_player::MEDIA_PLAYER_STATE_ANNOUNCING;
+                then:
+                  - media_player.speaker.play_on_device_media_file:
+                      media_file: volume_beep
+                      announcement: true
 
   - interval: 1s
     then:
@@ -768,13 +782,66 @@ display:
         return true;
       };
 
-      // Prefer the custom full-width pixel renderer for supported ASCII text.
-      // Fall back to the font renderer for Hebrew and unsupported characters.
+      auto utf8_codepoint = [](const std::string &text, size_t pos, size_t len) -> uint32_t {
+        if (len == 1) {
+          return (uint8_t) text[pos];
+        }
+        if (len == 2) {
+          return ((text[pos] & 0x1F) << 6) | (text[pos + 1] & 0x3F);
+        }
+        if (len == 3) {
+          return ((text[pos] & 0x0F) << 12) | ((text[pos + 1] & 0x3F) << 6) | (text[pos + 2] & 0x3F);
+        }
+        if (len == 4) {
+          return ((text[pos] & 0x07) << 18) | ((text[pos + 1] & 0x3F) << 12) | ((text[pos + 2] & 0x3F) << 6) | (text[pos + 3] & 0x3F);
+        }
+        return 0;
+      };
+
+      auto hebrew_pixel_glyph = [](uint32_t cp, uint8_t rows[7]) -> int {
+        for (int i = 0; i < 7; i++) {
+          rows[i] = 0;
+        }
+        switch (cp) {
+          case 0x05D0: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0101; rows[5]=0b1001; rows[6]=0b1001; return 4; // alef
+          case 0x05D1: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1111; return 4; // bet
+          case 0x05D2: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0010; rows[4]=0b0100; rows[5]=0b1000; rows[6]=0b1000; return 4; // gimel
+          case 0x05D3: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // dalet
+          case 0x05D4: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b1001; rows[5]=0b1001; rows[6]=0b1001; return 4; // he
+          case 0x05D5: rows[0]=0b010; rows[1]=0b010; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3; // vav
+          case 0x05D6: rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3; // zayin
+          case 0x05D7: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1001; rows[4]=0b1001; rows[5]=0b1001; rows[6]=0b1001; return 4; // het
+          case 0x05D8: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b1001; rows[6]=0b1111; return 4; // tet
+          case 0x05D9: rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b001; rows[4]=0b001; rows[5]=0b000; rows[6]=0b000; return 3; // yod
+          case 0x05DA: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // final kaf
+          case 0x05DB: rows[0]=0b1110; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1110; return 4; // kaf
+          case 0x05DC: rows[0]=0b0010; rows[1]=0b0010; rows[2]=0b0010; rows[3]=0b0110; rows[4]=0b1010; rows[5]=0b1010; rows[6]=0b0110; return 4; // lamed
+          case 0x05DD: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1001; rows[4]=0b1001; rows[5]=0b1001; rows[6]=0b1111; return 4; // final mem
+          case 0x05DE: rows[0]=0b1110; rows[1]=0b1001; rows[2]=0b0001; rows[3]=0b0010; rows[4]=0b0100; rows[5]=0b1000; rows[6]=0b1111; return 4; // mem
+          case 0x05DF: rows[0]=0b010; rows[1]=0b010; rows[2]=0b010; rows[3]=0b010; rows[4]=0b010; rows[5]=0b010; rows[6]=0b010; return 3; // final nun
+          case 0x05E0: rows[0]=0b111; rows[1]=0b001; rows[2]=0b001; rows[3]=0b001; rows[4]=0b001; rows[5]=0b001; rows[6]=0b111; return 3; // nun
+          case 0x05E1: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1001; rows[4]=0b1001; rows[5]=0b0001; rows[6]=0b1110; return 4; // samekh
+          case 0x05E2: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1111; return 4; // ayin
+          case 0x05E3: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // final pe
+          case 0x05E4: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1110; return 4; // pe
+          case 0x05E5: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // final tsadi
+          case 0x05E6: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b0101; rows[3]=0b0011; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b1111; return 4; // tsadi
+          case 0x05E7: rows[0]=0b1111; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // qof
+          case 0x05E8: rows[0]=0b1111; rows[1]=0b0001; rows[2]=0b0001; rows[3]=0b0001; rows[4]=0b0001; rows[5]=0b0001; rows[6]=0b0001; return 4; // resh
+          case 0x05E9: rows[0]=0b1001; rows[1]=0b1001; rows[2]=0b1001; rows[3]=0b1111; rows[4]=0b0001; rows[5]=0b1001; rows[6]=0b1111; return 4; // shin
+          case 0x05EA: rows[0]=0b1111; rows[1]=0b0101; rows[2]=0b0101; rows[3]=0b0101; rows[4]=0b0101; rows[5]=0b0101; rows[6]=0b0101; return 4; // tav
+          default: return 0;
+        }
+      };
+
+      // Prefer the custom full-width pixel renderer for supported text.
+      // Fall back to the ESPHome font renderer only for unsupported characters.
       auto draw_hebrew_text = [&](const std::string &text) -> bool {
         struct Utf8Slice {
           size_t start;
           size_t len;
           int width;
+          uint32_t codepoint;
         };
         Utf8Slice chars[100];
         size_t char_count = 0;
@@ -794,8 +861,13 @@ display:
             return false;
           }
 
-          const int glyph_width = (len == 1 && text[i] == ' ') ? 3 : 5;
-          chars[char_count++] = {i, len, glyph_width};
+          const uint32_t codepoint = utf8_codepoint(text, i, len);
+          uint8_t rows[7];
+          const int glyph_width = codepoint == ' ' ? 2 : hebrew_pixel_glyph(codepoint, rows);
+          if (glyph_width == 0) {
+            return false;
+          }
+          chars[char_count++] = {i, len, glyph_width, codepoint};
           text_width += glyph_width;
           i += len;
         }
@@ -804,27 +876,29 @@ display:
           return false;
         }
 
-        // Render each UTF-8 character with the real Hebrew font, but place the
-        // characters ourselves. Short Hebrew messages fill the whole matrix;
-        // longer Hebrew messages scroll from right to left.
+        // Short Hebrew messages fill the whole matrix; longer Hebrew messages
+        // scroll from right to left.
         int x = 0;
-        const bool spread = char_count <= 7 && text_width + (int) char_count - 1 <= 32;
         const int gaps = char_count > 1 ? (int) char_count - 1 : 0;
+        const bool spread = text_width + gaps <= 32;
         const int extra = spread ? 32 - text_width - gaps : 0;
 
         if (!spread) {
           const int scroll_span = text_width + gaps + 33;
-          x = 32 - ((now_ms / 80) % scroll_span);
+          x = -text_width - gaps + ((now_ms / 80) % scroll_span);
         }
 
         for (size_t i = 0; i < char_count; i++) {
           const auto &ch = chars[char_count - 1 - i];
-          std::string glyph;
-          glyph.reserve(ch.len);
-          glyph.append(text, ch.start, ch.len);
-
-          if (x > -8 && x < 32) {
-            it.print(x, 0, id(matrix_font), glyph.c_str());
+          uint8_t rows[7];
+          const int width = ch.codepoint == ' ' ? 2 : hebrew_pixel_glyph(ch.codepoint, rows);
+          for (int y = 0; y < 7; y++) {
+            for (int col = 0; col < width; col++) {
+              const int px = x + col;
+              if (px >= 0 && px < 32 && (rows[y] & (1 << (width - 1 - col)))) {
+                it.draw_pixel_at(px, y, Color::WHITE);
+              }
+            }
           }
 
           if (i + 1 < char_count) {
@@ -869,23 +943,59 @@ display:
         it.draw_pixel_at(x + 1, 1, Color::WHITE);
       };
 
-      // Fixed-width sensor screen. A string like "24C 57.4%" is too wide for
-      // the full-width text renderer and would scroll, so this draws the
-      // compact "24°C 57%" layout directly into known columns.
+      auto draw_tiny_digit = [&](int x, int value) {
+        static const uint8_t digits[10][5] = {
+          {0b11, 0b11, 0b11, 0b11, 0b11},
+          {0b01, 0b01, 0b01, 0b01, 0b01},
+          {0b11, 0b01, 0b11, 0b10, 0b11},
+          {0b11, 0b01, 0b11, 0b01, 0b11},
+          {0b10, 0b10, 0b11, 0b01, 0b01},
+          {0b11, 0b10, 0b11, 0b01, 0b11},
+          {0b11, 0b10, 0b11, 0b11, 0b11},
+          {0b11, 0b01, 0b01, 0b01, 0b01},
+          {0b11, 0b11, 0b11, 0b11, 0b11},
+          {0b11, 0b11, 0b11, 0b01, 0b11},
+        };
+        if (value < 0 || value > 9) {
+          return;
+        }
+        for (int y = 0; y < 5; y++) {
+          for (int col = 0; col < 2; col++) {
+            if (digits[value][y] & (1 << (1 - col))) {
+              it.draw_pixel_at(x + col, y + 1, Color::WHITE);
+            }
+          }
+        }
+      };
+
+      auto draw_tiny_percent = [&](int x) {
+        it.draw_pixel_at(x, 1, Color::WHITE);
+        it.draw_pixel_at(x + 1, 2, Color::WHITE);
+        it.draw_pixel_at(x, 4, Color::WHITE);
+        it.draw_pixel_at(x + 1, 5, Color::WHITE);
+      };
+
+      // Fixed-width sensor screen. Draw "24°C 57.44%" without pressure and
+      // without scrolling.
       auto draw_sensor_screen = [&]() {
         int temp = isnan(id(aht_temperature).state) ? 0 : (int) roundf(id(aht_temperature).state);
-        int humidity = isnan(id(aht_humidity).state) ? 0 : (int) roundf(id(aht_humidity).state);
+        int humidity_x100 = isnan(id(aht_humidity).state) ? 0 : (int) roundf(id(aht_humidity).state * 100.0f);
         temp = temp < 0 ? 0 : (temp > 99 ? 99 : temp);
-        humidity = humidity < 0 ? 0 : (humidity > 99 ? 99 : humidity);
+        humidity_x100 = humidity_x100 < 0 ? 0 : (humidity_x100 > 9999 ? 9999 : humidity_x100);
 
         draw_small_glyph(0, '0' + (temp / 10));
         draw_small_glyph(4, '0' + (temp % 10));
         draw_degree(8);
         draw_small_glyph(11, 'C');
 
-        draw_small_glyph(17, '0' + (humidity / 10));
-        draw_small_glyph(21, '0' + (humidity % 10));
-        draw_small_glyph(27, '%');
+        const int humidity_int = humidity_x100 / 100;
+        const int humidity_dec = humidity_x100 % 100;
+        draw_tiny_digit(16, humidity_int / 10);
+        draw_tiny_digit(19, humidity_int % 10);
+        it.draw_pixel_at(22, 6, Color::WHITE);
+        draw_tiny_digit(24, humidity_dec / 10);
+        draw_tiny_digit(27, humidity_dec % 10);
+        draw_tiny_percent(30);
       };
 
       // The clock uses a separate 4-pixel-wide digit set so HH:MM:SS fills the
@@ -1025,6 +1135,7 @@ media_player:
     on_play:
       - lambda: |-
           const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;
+          id(audio_playback_active) = true;
           ESP_LOGI("audio", "Media playback started: media_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms");
           id(media_message) = "MUSIC";
           id(media_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
@@ -1032,32 +1143,41 @@ media_player:
     on_announcement:
       - lambda: |-
           const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;
+          id(audio_playback_active) = true;
           ESP_LOGI("audio", "Announcement playback started: announcement_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms");
           id(media_message) = "SPEAKER";
           id(media_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
     on_pause:
       - lambda: |-
+          id(audio_playback_active) = false;
           ESP_LOGI("audio", "Media playback paused");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_idle:
       - lambda: |-
+          id(audio_playback_active) = false;
           ESP_LOGI("audio", "Media player idle");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_turn_off:
       - lambda: |-
+          id(audio_playback_active) = false;
           ESP_LOGI("audio", "Media player turned off");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_volume:
       - lambda: |-
-          ESP_LOGI("settings", "Speaker volume changed to %.0f%%", x * 100.0f);
+          ESP_LOGI("settings", "Speaker volume changed to %.0f%% (audio_playback_active=%s, state=%d)", x * 100.0f, id(audio_playback_active) ? "true" : "false", (int)id(clock_speaker).state);
           if (millis() < 15000) {
+            return;
+          }
+          if (id(audio_playback_active) || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_PLAYING || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING) {
+            ESP_LOGI("audio", "Volume feedback beep skipped because audio is already playing");
+            id(volume_beep_pending) = false;
             return;
           }
           // Defer actual playback to the 250ms interval above. Calling
