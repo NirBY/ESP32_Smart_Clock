@@ -92,7 +92,7 @@ jobs:
             echo "No verification report changes to commit."
           else
             git commit -m "chore: verify latest package builds"
-            git push --force-with-lease origin automation/latest-package-verify
+            git push --force origin automation/latest-package-verify
           fi
 
       - name: Write review instructions

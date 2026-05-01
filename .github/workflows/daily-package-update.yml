@@ -86,7 +86,7 @@ jobs:
             echo "No verification report changes to commit."
           else
             git commit -m "Update daily package verification report."
-            git push --force-with-lease origin automation/daily-package-update
+            git push --force origin automation/daily-package-update
           fi
 
       - name: Write review instructions
