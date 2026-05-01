@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
@@ -83,21 +82,28 @@ jobs:
             echo "ESPHome validation, ESPHome compile, PlatformIO hardware test build, and PlatformIO Bluetooth speaker build all passed with the latest available Python packages."
           } > .github/reports/latest-package-verify.md
 
-      - name: Create manual review pull request
-        uses: peter-evans/create-pull-request@v8
-        with:
-          commit-message: "chore: verify latest package builds"
-          branch: automation/latest-package-verify
-          delete-branch: true
-          title: "chore: verify latest package builds"
-          body: |
-            ## Summary
-            - Verified the firmware builds with the latest available ESPHome and PlatformIO packages.
-            - Updated the package verification report for manual review.
+      - name: Update manual review branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B automation/latest-package-verify
+          git add .github/reports/latest-package-verify.md
+          if git diff --cached --quiet; then
+            echo "No verification report changes to commit."
+          else
+            git commit -m "chore: verify latest package builds"
+            git push --force-with-lease origin automation/latest-package-verify
+          fi
 
-            ## Verification
-            - `esphome config esphome-smart-clock.yaml`
-            - `esphome compile esphome-smart-clock.yaml`
-            - `pio run -e esp32dev`
-            - `pio run -e bluetooth_speaker`
-          add-paths: .github/reports/latest-package-verify.md
+      - name: Write review instructions
+        run: |
+          {
+            echo "## Manual review branch"
+            echo
+            echo "The latest package verification report was pushed to:"
+            echo
+            echo "- \`automation/latest-package-verify\`"
+            echo
+            echo "GitHub Actions is not permitted by this repository to create pull requests automatically."
+            echo "Open a pull request manually from the branch above if a review PR is needed."
+          } >> "$GITHUB_STEP_SUMMARY"
