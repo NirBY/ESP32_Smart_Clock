@@ -88,6 +88,23 @@ esphome upload esphome-smart-clock.yaml
 
 ESPHome will upload wirelessly if the device is online. If OTA fails or the device is offline, connect USB and upload again.
 
+If mDNS discovery does not find `esp32-smart-clock.local`, upload directly to
+the device IP address:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+To upload and keep the live log open from that IP:
+
+```powershell
+esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+Replace `192.168.1.99` with the current IP shown in your router, Home Assistant
+device page, or ESPHome logs. This is still an OTA update, so it works only after
+the first USB flash and only when the ESPHome API is reachable on the network.
+
 From Home Assistant:
 
 1. Install the ESPHome add-on if it is not installed.

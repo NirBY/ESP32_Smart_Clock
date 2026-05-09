@@ -51,6 +51,12 @@ Upload ESPHome:
 esphome upload esphome-smart-clock.yaml
 ```
 
+Upload ESPHome over Wi-Fi by IP address:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```
+
 Open ESPHome logs:
 
 ```powershell

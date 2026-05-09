@@ -77,6 +77,18 @@ cd Z:\workspace\esp32_smart_clock
 esphome logs esphome-smart-clock.yaml --device OTA
 ```
 
+If OTA discovery does not find the device, use the IP address:
+
+```powershell
+esphome logs esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+You can also upload by IP and keep the log open:
+
+```powershell
+esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```
+
 In Home Assistant, you can also open the ESPHome device and use **Logs**.
 
 If OTA logs do not connect, use USB logs first. OTA logs only work after Wi-Fi and the ESPHome API are already connected.

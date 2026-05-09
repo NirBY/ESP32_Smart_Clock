@@ -107,6 +107,18 @@ Upload and keep logs open:
 esphome run esphome-smart-clock.yaml --device COM5
 ```
 
+Upload over Wi-Fi by IP address:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+Upload over Wi-Fi by IP address and keep logs open:
+
+```powershell
+esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```
+
 Build the PlatformIO hardware test:
 
 ```powershell

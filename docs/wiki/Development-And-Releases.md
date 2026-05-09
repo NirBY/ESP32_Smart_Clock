@@ -72,6 +72,22 @@ cd Z:\workspace\esp32_smart_clock
 esphome upload esphome-smart-clock.yaml
 ```
 
+If name discovery fails but you know the clock's IP address, upload directly:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+To upload and immediately watch logs from that IP:
+
+```powershell
+esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+Replace `192.168.1.99` with the IP from your router, Home Assistant device page,
+or ESPHome logs. This still requires a previously flashed ESPHome firmware with
+Wi-Fi and the ESPHome API working.
+
 ## Install The PlatformIO Hardware Test
 
 This is only for checking the hardware wiring. It replaces the ESPHome firmware until you flash ESPHome again.
