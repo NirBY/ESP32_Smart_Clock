@@ -1,5 +1,5 @@
-alias: ESP32 smart clock auto firmware update
-description: Check the GitHub release-backed update entity and install during a quiet window.
+alias: ESP32 smart clock GitHub firmware update check
+description: Check the GitHub release-backed update entity and notify when a public build is available.
 triggers:
   - trigger: time
     at: "03:15:00"
@@ -11,7 +11,12 @@ actions:
   - condition: state
     entity_id: update.esp32_smart_clock_firmware_update
     state: "on"
-  - action: update.install
-    target:
-      entity_id: update.esp32_smart_clock_firmware_update
+  - action: persistent_notification.create
+    data:
+      title: ESP32 smart clock firmware update
+      message: >
+        A public GitHub firmware release is available. For a personalized clock,
+        update from your local ESPHome YAML instead so secrets.yaml and local
+        config are preserved. Use `esphome upload esphome-smart-clock.yaml
+        --device <device-ip>`.
 mode: single

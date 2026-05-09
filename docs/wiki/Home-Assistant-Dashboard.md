@@ -33,7 +33,7 @@ dashboard view. It uses only built-in Home Assistant cards:
 - Markdown cards for the explanations Home Assistant cannot show below controls
   on the generated device page.
 - Entity cards for quick glance controls.
-- Entities cards grouped by Display, Alarm, Audio, System Alerts, Firmware Updates, and Sensors.
+- Entities cards grouped by Display, Alarm, Audio, System Alerts, Firmware Checks, and Sensors.
 
 If Home Assistant generated different entity IDs on your system, edit the YAML
 entity IDs after pasting it into the dashboard editor.

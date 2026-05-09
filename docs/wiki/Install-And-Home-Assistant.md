@@ -124,7 +124,7 @@ For Home Assistant, use `esphome-smart-clock.yaml` with ESPHome. It exposes:
 - display timing number entities for message/media/alarm/Wi-Fi/date/sensor screen durations and periodic intervals
 - `Speaker` media player entity for Home Assistant TTS/audio
 - `Hourly Beep Enabled` switch and quiet-hours controls for playing the local beep at the top of each hour
-- `Firmware Update` update entity for GitHub release firmware
+- disabled-by-default `Firmware Update` update entity for public GitHub release firmware
 - `Alarm Enabled`, `Alarm Hour`, and `Alarm Minute` entities as alarm controls
 - an `esphome.alarm_triggered` Home Assistant event when the alarm time is reached
 - an `esphome.media_playback_failed` Home Assistant event when media starts and drops out quickly
@@ -138,7 +138,8 @@ Important limitations:
 - Wi-Fi music playback is through Home Assistant/ESPHome as a network media player. It is not a native Chromecast, AirPlay, Spotify Connect, or DLNA speaker.
 - ESPHome does not expose media stream size before playback starts, so oversized streams cannot be rejected early. Fast playback failures show `AUDIO ERR` on the display and fire `esphome.media_playback_failed`.
 - Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
-- The `Firmware Update` entity installs `esphome-smart-clock.ota.bin` from the raw GitHub `firmware-latest` branch through ESPHome HTTP OTA. It must use the OTA binary, not the factory binary.
+- For normal personalized devices, update from local ESPHome YAML by USB or by IP. That path preserves `secrets.yaml` and local YAML edits.
+- The disabled-by-default `Firmware Update` entity checks public GitHub release firmware from the raw GitHub `firmware-latest` branch. Public release firmware is built with `secrets.example.yaml`, not your private `secrets.yaml`.
 - The alarm trigger sets the matrix to `ALARM` and fires an `esphome.alarm_triggered` event. Use a Home Assistant automation to play TTS or `media_player.play_media` on the `Speaker` entity.
 - To allow the device to fire Home Assistant events, open the ESPHome integration device settings in Home Assistant and enable "Allow the device to perform Home Assistant actions".
 - The ESPHome config uses the Google Font `Noto Sans Hebrew`, so first compile needs internet access from the ESPHome builder.
@@ -209,20 +210,21 @@ actions:
       message: "The stream stopped quickly. Use 16 kHz mono or a smaller stream."
 ```
 
-Automatic GitHub firmware update during a quiet maintenance window:
+GitHub public firmware update check:
 
-The easiest setup is the Home Assistant blueprint:
+The easiest notification-only setup is the Home Assistant blueprint:
 
 [![Import ESP32 Smart Clock update automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_auto_update.yaml)
 
 After import, select `update.esp32_smart_clock_firmware_update`, choose the
-maintenance time, and save the automation.
+check time, and save the automation. Leave automatic install disabled for a
+normal personalized clock.
 
-The same automation is also available as `docs/home-assistant-auto-update.yaml`
+The same notification automation is also available as `docs/home-assistant-auto-update.yaml`
 if you prefer to paste YAML manually.
 
 ```yaml
-alias: ESP32 smart clock auto firmware update
+alias: ESP32 smart clock GitHub firmware update check
 triggers:
   - trigger: time
     at: "03:15:00"
@@ -234,10 +236,25 @@ actions:
   - condition: state
     entity_id: update.esp32_smart_clock_firmware_update
     state: "on"
-  - action: update.install
-    target:
-      entity_id: update.esp32_smart_clock_firmware_update
+  - action: persistent_notification.create
+    data:
+      title: ESP32 smart clock firmware update
+      message: "A public GitHub release is available. For a personalized clock, update from your local ESPHome YAML by IP."
 mode: single
+```
+
+Why this is notification-only by default:
+
+- `secrets.yaml` is used at compile time. A public GitHub binary cannot read your
+  local private secrets during install.
+- Local YAML edits are also compile-time. A public GitHub binary replaces them.
+- Runtime Home Assistant controls use ESPHome restore settings where possible,
+  but compile-time Wi-Fi/API/config still comes from the firmware binary.
+
+For normal updates, use:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
 ```
 
 How the GitHub update works:
@@ -251,18 +268,19 @@ flowchart TD
   E -->|"No"| F["Entity stays idle"]
   E -->|"Yes"| G["Entity turns on in Home Assistant"]
   G --> H["Blueprint automation runs at the selected time"]
-  H --> I["Home Assistant calls update.install"]
-  I --> J["ESP32 downloads esphome-smart-clock.ota.bin from raw GitHub"]
-  J --> K["ESPHome verifies MD5, flashes OTA, and reboots"]
+  H --> I["Automation creates a notification by default"]
+  I --> J["User updates local YAML by IP for personalized firmware"]
+  J --> K["ESPHome compiles with local secrets.yaml and uploads OTA"]
 ```
 
 Notes:
 
-- Install the first firmware with `Firmware Update` manually. Future releases can
-  be handled by Home Assistant.
+- The public GitHub update entity is disabled by default in new firmware. Enable
+  it only if you intentionally want to test public release binaries.
 - The update entity uses the `firmware-latest` branch, which is updated only after the release workflow builds and publishes a release.
 - The raw GitHub update channel avoids GitHub release-download redirects with large HTTP headers, which can overflow the ESP32 HTTP client buffer.
-- The automation installs only when the update entity is `on`.
+- The blueprint notifies only by default. It installs only if you explicitly
+  enable public binary install in the blueprint options.
 - Use `esphome-smart-clock.ota.bin` for this path. The factory binary is only
   for USB/recovery flashing.
 

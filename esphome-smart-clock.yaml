@@ -1,7 +1,7 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
-  firmware_version: "0.1.0-beta.11"
+  firmware_version: "0.1.0-beta.12"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -506,6 +506,7 @@ update:
     icon: "mdi:update"
     source: ${github_release_manifest_url}
     update_interval: 6h
+    disabled_by_default: true
 
 text:
   - platform: template

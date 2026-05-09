@@ -1,8 +1,10 @@
 blueprint:
-  name: ESP32 Smart Clock GitHub Firmware Auto Update
+  name: ESP32 Smart Clock GitHub Firmware Update Check
   description: >
-    Refresh the ESP32 Smart Clock GitHub release-backed update entity and install
-    the newest OTA firmware during a scheduled maintenance window.
+    Refresh the ESP32 Smart Clock GitHub release-backed update entity. By
+    default this only creates a notification, because public GitHub release
+    firmware does not include your local secrets.yaml or local YAML edits. Enable
+    install only when you intentionally want to flash the public release binary.
   domain: automation
   input:
     firmware_update_entity:
@@ -13,16 +15,28 @@ blueprint:
           domain: update
     update_time:
       name: Update check time
-      description: Time of day to check GitHub releases and install if an update is available.
+      description: Time of day to check GitHub releases.
       default: "03:15:00"
       selector:
         time:
+    install_update:
+      name: Install public GitHub firmware automatically
+      description: >
+        Leave off for normal personalized clocks. Turn on only if you understand
+        that the public release binary is not compiled with your local
+        secrets.yaml or local YAML edits.
+      default: false
+      selector:
+        boolean:
 
 mode: single
 
 trigger:
   - platform: time
     at: !input update_time
+
+variables:
+  install_update: !input install_update
 
 action:
   - service: homeassistant.update_entity
@@ -32,6 +46,20 @@ action:
   - condition: state
     entity_id: !input firmware_update_entity
     state: "on"
-  - service: update.install
-    target:
-      entity_id: !input firmware_update_entity
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ install_update }}"
+        sequence:
+          - service: update.install
+            target:
+              entity_id: !input firmware_update_entity
+    default:
+      - service: persistent_notification.create
+        data:
+          title: ESP32 Smart Clock firmware update
+          message: >
+            A public GitHub firmware release is available. For a personalized
+            clock, update from your local ESPHome YAML instead so secrets.yaml
+            and local config are preserved. Use
+            `esphome upload esphome-smart-clock.yaml --device <device-ip>`.

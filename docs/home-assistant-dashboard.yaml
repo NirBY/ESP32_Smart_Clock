@@ -150,21 +150,21 @@ views:
           `LOW PWR`. Turn them off if you want the clock to stay quiet.
 
       - type: entities
-        title: Firmware Updates
+        title: Firmware Checks
         icon: mdi:update
         show_header_toggle: false
         state_color: true
         entities:
           - entity: update.esp32_smart_clock_firmware_update
-            name: GitHub release firmware
+            name: Public GitHub release firmware
             icon: mdi:cloud-download-outline
 
       - type: markdown
         content: >
           **Update notes:** this entity checks the raw GitHub `firmware-latest`
-          manifest published by the release workflow. Home Assistant can install
-          it manually from the entity, or an automation can refresh the entity
-          and call `update.install` during a maintenance window.
+          manifest published by the release workflow. Public GitHub firmware is
+          not compiled with your local `secrets.yaml` or local YAML edits. For a
+          personalized clock, update by IP from your local ESPHome YAML.
 
       - type: entities
         title: Sensors

@@ -21,18 +21,26 @@ For normal use, install the **ESPHome smart clock firmware** from `esphome-smart
 
 If upload fails, hold **BOOT** while upload starts, then release **BOOT** when writing begins.
 
-## Home Assistant Auto Updates
+## Firmware Updates
 
-After the clock is running firmware with the `Firmware Update` entity, Home
-Assistant can install new GitHub release firmware automatically during a quiet
-maintenance window.
+For a personalized clock, update from your local ESPHome YAML. This preserves
+your private `secrets.yaml` and any local config edits:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```
+
+Replace `192.168.1.99` with the clock IP address.
+
+The GitHub release update entity checks public release binaries. Those binaries
+are built in GitHub Actions with `secrets.example.yaml`, so they are useful as
+reference/recovery artifacts but are not the normal update path for a device
+that needs your local Wi-Fi/API secrets.
 
 [![Import ESP32 Smart Clock update automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_auto_update.yaml)
 
-The button imports the automation blueprint. Select
-`update.esp32_smart_clock_firmware_update`, choose the update time, and save the
-automation. The first firmware that adds this update entity still has to be
-installed manually.
+The button imports a safe check/notify blueprint. It does not install public
+GitHub firmware unless you explicitly enable that option.
 
 ## Calendar Agenda Announcements
 

@@ -203,8 +203,8 @@ The workflow:
 - builds the PlatformIO Bluetooth speaker firmware
 - stamps the ESPHome project version from the release tag
 - uploads all firmware binaries to a GitHub Release
-- uploads `esphome-smart-clock.ota.md5` and `firmware-manifest.json` for Home Assistant managed firmware updates
-- updates the `firmware-latest` branch with the OTA binary, MD5, and manifest used by the device update entity
+- uploads `esphome-smart-clock.ota.md5` and `firmware-manifest.json` for public GitHub firmware checks
+- updates the `firmware-latest` branch with the OTA binary, MD5, and manifest used by the disabled-by-default public update entity
 
 Create a new release:
 
@@ -226,19 +226,26 @@ The firmware reads the latest manifest from the raw `firmware-latest` branch:
 
 `https://raw.githubusercontent.com/NirBY/ESP32_Smart_Clock/firmware-latest/firmware-manifest.json`
 
-Home Assistant can install updates manually from the `Firmware Update` entity or automatically with an automation that calls `update.install`.
+For normal personalized clocks, install updates from your local ESPHome YAML by
+USB or by IP. That preserves `secrets.yaml` and any local YAML edits. The GitHub
+manifest/update entity points at public release binaries built in GitHub Actions
+with `secrets.example.yaml`.
 
-## GitHub To Home Assistant Update Flow
+## GitHub Public Firmware Check Flow
 
 The update system has two halves:
 
 - GitHub Actions builds and publishes release assets.
 - GitHub Actions mirrors the Home Assistant OTA files to the `firmware-latest` branch.
-- Home Assistant decides when to install those assets on the clock.
+- Home Assistant can notify you that a public release exists.
 
 The ESP32 does not poll GitHub and self-update silently. It exposes a normal
-Home Assistant `update` entity, and Home Assistant calls `update.install` when
-you approve it manually or when your automation runs.
+Home Assistant `update` entity. The safe default is notification only. For a
+personalized device, update by IP from your local ESPHome YAML instead:
+
+```powershell
+esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```
 
 The device uses the raw `firmware-latest` branch instead of
 `releases/latest/download`. GitHub release-download URLs return very large
@@ -257,11 +264,11 @@ flowchart TD
   G --> I["esphome-smart-clock.ota.md5"]
   G --> J["firmware-manifest.json"]
   J --> K["ESPHome Firmware Update entity checks latest manifest"]
-  K --> L["Home Assistant shows update available"]
-  L --> M["User clicks install or automation calls update.install"]
-  M --> N["ESP32 downloads the OTA binary from raw GitHub"]
-  N --> O["ESPHome verifies MD5 and writes the OTA slot"]
-  O --> P["ESP32 reboots into the new firmware"]
+  K --> L["Home Assistant can show update available"]
+  L --> M["Blueprint creates a notification by default"]
+  M --> N["User runs local ESPHome upload by IP"]
+  N --> O["ESPHome compiles with local secrets.yaml"]
+  O --> P["ESPHome uploads OTA to the clock"]
 ```
 
 What each release file does:
@@ -284,12 +291,16 @@ decide whether `update.esp32_smart_clock_firmware_update` is `on`.
 
 Requirements:
 
-- The clock must already be running a firmware version that includes the
-  `Firmware Update` entity. Install that one manually first.
-- The ESP32 needs internet access to GitHub over HTTPS during the install.
+- The GitHub update entity is disabled by default in current firmware because
+  public binaries do not contain your local secrets or local YAML edits.
+- The ESP32 needs internet access to GitHub over HTTPS to check/install public
+  release binaries.
 - Home Assistant must be connected to the ESPHome device.
 - If Home Assistant generated a different entity ID, select that entity in the
   blueprint or edit the automation YAML.
+
+Important: do not use automatic `update.install` for a normal personalized
+clock. It installs the public binary. Use local OTA by IP for your real device.
 
 ## Verify Latest Packages Workflow
 
