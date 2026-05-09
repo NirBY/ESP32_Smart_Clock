@@ -137,11 +137,10 @@ jobs:
           ota_md5="$(md5sum release/esphome-smart-clock.ota.bin | awk '{print $1}')"
           printf '%s\n' "${ota_md5}" > release/esphome-smart-clock.ota.md5
 
+          ota_url="https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/firmware-latest/esphome-smart-clock.ota.bin"
           if [ -n "${RELEASE_TAG}" ]; then
-            ota_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/esphome-smart-clock.ota.bin"
             release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
           else
-            ota_url="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/esphome-smart-clock.ota.bin"
             release_url="https://github.com/${GITHUB_REPOSITORY}/releases/latest"
           fi
           export ota_url release_url
@@ -195,3 +194,24 @@ jobs:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
           prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
           files: release/*
+
+      - name: Publish Home Assistant firmware update channel
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+        env:
+          UPDATE_BRANCH: firmware-latest
+        run: |
+          set -euo pipefail
+
+          mkdir -p update-channel
+          cp release/esphome-smart-clock.ota.bin update-channel/esphome-smart-clock.ota.bin
+          cp release/esphome-smart-clock.ota.md5 update-channel/esphome-smart-clock.ota.md5
+          cp release/firmware-manifest.json update-channel/firmware-manifest.json
+          printf '%s\n' "${FIRMWARE_VERSION}" > update-channel/VERSION
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git -C update-channel init
+          git -C update-channel checkout -B "${UPDATE_BRANCH}"
+          git -C update-channel add .
+          git -C update-channel commit -m "Publish firmware ${FIRMWARE_VERSION}"
+          git -C update-channel push --force "https://x-access-token:${{ github.token }}@github.com/${GITHUB_REPOSITORY}.git" "${UPDATE_BRANCH}"

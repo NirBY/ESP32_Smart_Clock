@@ -1,9 +1,9 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
-  firmware_version: "0.1.0-beta.8"
+  firmware_version: "0.1.0-beta.9"
   github_repo: NirBY/ESP32_Smart_Clock
-  github_release_manifest_url: "https://github.com/${github_repo}/releases/latest/download/firmware-manifest.json"
+  github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
 
 esphome:

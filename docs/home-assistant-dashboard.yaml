@@ -161,10 +161,10 @@ views:
 
       - type: markdown
         content: >
-          **Update notes:** this entity checks the latest GitHub release
-          manifest. Home Assistant can install it manually from the entity, or
-          an automation can refresh the entity and call `update.install` during
-          a maintenance window.
+          **Update notes:** this entity checks the raw GitHub `firmware-latest`
+          manifest published by the release workflow. Home Assistant can install
+          it manually from the entity, or an automation can refresh the entity
+          and call `update.install` during a maintenance window.
 
       - type: entities
         title: Sensors

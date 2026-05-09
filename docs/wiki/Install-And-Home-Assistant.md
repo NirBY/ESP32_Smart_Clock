@@ -121,7 +121,7 @@ Important limitations:
 - Wi-Fi music playback is through Home Assistant/ESPHome as a network media player. It is not a native Chromecast, AirPlay, Spotify Connect, or DLNA speaker.
 - ESPHome does not expose media stream size before playback starts, so oversized streams cannot be rejected early. Fast playback failures show `AUDIO ERR` on the display and fire `esphome.media_playback_failed`.
 - Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
-- The `Firmware Update` entity installs the GitHub release `esphome-smart-clock.ota.bin` through ESPHome HTTP OTA. It must use the OTA binary, not the factory binary.
+- The `Firmware Update` entity installs `esphome-smart-clock.ota.bin` from the raw GitHub `firmware-latest` branch through ESPHome HTTP OTA. It must use the OTA binary, not the factory binary.
 - The alarm trigger sets the matrix to `ALARM` and fires an `esphome.alarm_triggered` event. Use a Home Assistant automation to play TTS or `media_player.play_media` on the `Speaker` entity.
 - To allow the device to fire Home Assistant events, open the ESPHome integration device settings in Home Assistant and enable "Allow the device to perform Home Assistant actions".
 - The ESPHome config uses the Google Font `Noto Sans Hebrew`, so first compile needs internet access from the ESPHome builder.
@@ -219,22 +219,24 @@ How the GitHub update works:
 
 ```mermaid
 flowchart TD
-  A["GitHub release is created"] --> B["Release publishes OTA binary, MD5, and manifest"]
-  B --> C["Firmware Update entity reads firmware-manifest.json"]
-  C --> D{"Newer version?"}
-  D -->|"No"| E["Entity stays idle"]
-  D -->|"Yes"| F["Entity turns on in Home Assistant"]
-  F --> G["Blueprint automation runs at the selected time"]
-  G --> H["Home Assistant calls update.install"]
-  H --> I["ESP32 downloads esphome-smart-clock.ota.bin"]
-  I --> J["ESPHome verifies MD5, flashes OTA, and reboots"]
+  A["GitHub release is created"] --> B["Release publishes normal downloadable assets"]
+  B --> C["Workflow updates the firmware-latest branch"]
+  C --> D["Firmware Update entity reads firmware-manifest.json from raw GitHub"]
+  D --> E{"Newer version?"}
+  E -->|"No"| F["Entity stays idle"]
+  E -->|"Yes"| G["Entity turns on in Home Assistant"]
+  G --> H["Blueprint automation runs at the selected time"]
+  H --> I["Home Assistant calls update.install"]
+  I --> J["ESP32 downloads esphome-smart-clock.ota.bin from raw GitHub"]
+  J --> K["ESPHome verifies MD5, flashes OTA, and reboots"]
 ```
 
 Notes:
 
 - Install the first firmware with `Firmware Update` manually. Future releases can
   be handled by Home Assistant.
-- The update entity uses the GitHub release marked as latest.
+- The update entity uses the `firmware-latest` branch, which is updated only after the release workflow builds and publishes a release.
+- The raw GitHub update channel avoids GitHub release-download redirects with large HTTP headers, which can overflow the ESP32 HTTP client buffer.
 - The automation installs only when the update entity is `on`.
 - Use `esphome-smart-clock.ota.bin` for this path. The factory binary is only
   for USB/recovery flashing.
