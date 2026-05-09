@@ -1,0 +1,17 @@
+alias: ESP32 smart clock auto firmware update
+description: Check the GitHub release-backed update entity and install during a quiet window.
+triggers:
+  - trigger: time
+    at: "03:15:00"
+actions:
+  - action: homeassistant.update_entity
+    target:
+      entity_id: update.esp32_smart_clock_firmware_update
+  - delay: "00:00:10"
+  - condition: state
+    entity_id: update.esp32_smart_clock_firmware_update
+    state: "on"
+  - action: update.install
+    target:
+      entity_id: update.esp32_smart_clock_firmware_update
+mode: single

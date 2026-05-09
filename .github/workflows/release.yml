@@ -32,6 +32,33 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v6
 
+      - name: Resolve release version
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          INPUT_RELEASE_TAG: ${{ inputs.release_tag || '' }}
+          REF_NAME: ${{ github.ref_name }}
+          REF: ${{ github.ref }}
+        run: |
+          release_tag=""
+          if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${INPUT_RELEASE_TAG}" ]; then
+            release_tag="${INPUT_RELEASE_TAG}"
+          elif [[ "${REF}" == refs/tags/* ]]; then
+            release_tag="${REF_NAME}"
+          fi
+
+          firmware_version="${release_tag}"
+          firmware_version="${firmware_version#v}"
+          firmware_version="${firmware_version#V}"
+
+          if [ -z "${firmware_version}" ]; then
+            firmware_version="$(grep -E '^[[:space:]]*firmware_version:' esphome-smart-clock.yaml | head -n 1 | sed -E 's/.*"([^"]+)".*/\1/')"
+          fi
+
+          echo "RELEASE_TAG=${release_tag}" >> "${GITHUB_ENV}"
+          echo "FIRMWARE_VERSION=${firmware_version}" >> "${GITHUB_ENV}"
+          echo "Resolved release tag: ${release_tag:-none}"
+          echo "Resolved firmware version: ${firmware_version}"
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
@@ -48,6 +75,8 @@ jobs:
       - name: Use CI-local ESPHome build path
         run: |
           python - <<'PY'
+          import os
+          import re
           from pathlib import Path
 
           path = Path("esphome-smart-clock.yaml")
@@ -55,6 +84,14 @@ jobs:
           text = text.replace(
               "build_path: C:/Users/nirbe/.esphome/build/${device_name}",
               "build_path: build/${device_name}",
+          )
+          firmware_version = os.environ["FIRMWARE_VERSION"]
+          text = re.sub(
+              r'(^\s*firmware_version:\s*)".*?"',
+              rf'\g<1>"{firmware_version}"',
+              text,
+              count=1,
+              flags=re.MULTILINE,
           )
           path.write_text(text, encoding="utf-8")
           PY
@@ -97,11 +134,49 @@ jobs:
           cp .pio/build/esp32dev/firmware.bin release/platformio-hardware-test.bin
           cp .pio/build/bluetooth_speaker/firmware.bin release/bluetooth-speaker.bin
 
+          ota_md5="$(md5sum release/esphome-smart-clock.ota.bin | awk '{print $1}')"
+          printf '%s\n' "${ota_md5}" > release/esphome-smart-clock.ota.md5
+
+          if [ -n "${RELEASE_TAG}" ]; then
+            ota_url="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/esphome-smart-clock.ota.bin"
+            release_url="https://github.com/${GITHUB_REPOSITORY}/releases/tag/${RELEASE_TAG}"
+          else
+            ota_url="https://github.com/${GITHUB_REPOSITORY}/releases/latest/download/esphome-smart-clock.ota.bin"
+            release_url="https://github.com/${GITHUB_REPOSITORY}/releases/latest"
+          fi
+          export ota_url release_url
+
+          python - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          md5 = Path("release/esphome-smart-clock.ota.md5").read_text(encoding="utf-8").strip()
+          manifest = {
+              "name": "ESP32 Smart Clock",
+              "version": os.environ["FIRMWARE_VERSION"],
+              "builds": [
+                  {
+                      "chipFamily": "ESP32",
+                      "ota": {
+                          "md5": md5,
+                          "path": os.environ["ota_url"],
+                          "release_url": os.environ["release_url"],
+                          "summary": f"ESP32 Smart Clock {os.environ['FIRMWARE_VERSION']}",
+                      },
+                  }
+              ],
+          }
+          Path("release/firmware-manifest.json").write_text(
+              json.dumps(manifest, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
       - name: Create manual release tag after successful build
         if: github.event_name == 'workflow_dispatch' && inputs.release_tag != ''
         env:
           GH_TOKEN: ${{ github.token }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           gh api "repos/${{ github.repository }}/git/refs" \
             -f ref="refs/tags/${RELEASE_TAG}" \

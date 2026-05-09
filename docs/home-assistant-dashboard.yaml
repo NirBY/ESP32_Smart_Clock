@@ -150,6 +150,23 @@ views:
           `LOW PWR`. Turn them off if you want the clock to stay quiet.
 
       - type: entities
+        title: Firmware Updates
+        icon: mdi:update
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: update.esp32_smart_clock_firmware_update
+            name: GitHub release firmware
+            icon: mdi:cloud-download-outline
+
+      - type: markdown
+        content: >
+          **Update notes:** this entity checks the latest GitHub release
+          manifest. Home Assistant can install it manually from the entity, or
+          an automation can refresh the entity and call `update.install` during
+          a maintenance window.
+
+      - type: entities
         title: Sensors
         icon: mdi:home-thermometer-outline
         show_header_toggle: false

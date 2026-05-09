@@ -1,11 +1,17 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
+  firmware_version: "0.1.0-beta.8"
+  github_repo: NirBY/ESP32_Smart_Clock
+  github_release_manifest_url: "https://github.com/${github_repo}/releases/latest/download/firmware-manifest.json"
   bmp280_address: "0x77"
 
 esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
+  project:
+    name: nirby.esp32_smart_clock
+    version: "${firmware_version}"
   build_path: C:/Users/nirbe/.esphome/build/${device_name}
   devices:
     - id: display_device
@@ -87,6 +93,16 @@ api:
 
 ota:
   - platform: esphome
+  - platform: http_request
+
+http_request:
+  # GitHub release asset URLs redirect to long signed URLs. Keep redirects on
+  # and use a larger receive buffer so update checks do not fail on Location.
+  follow_redirects: true
+  redirect_limit: 5
+  timeout: 30s
+  buffer_size_rx: 4096
+  buffer_size_tx: 512
 
 wifi:
   id: wifi_component
@@ -480,6 +496,16 @@ sensor:
           - lambda: |-
               id(last_bmp_sensor_ms) = millis();
     update_interval: 30s
+
+update:
+  - platform: http_request
+    name: "Firmware Update"
+    id: firmware_update
+    device_id: system_device
+    entity_category: config
+    icon: "mdi:update"
+    source: ${github_release_manifest_url}
+    update_interval: 6h
 
 text:
   - platform: template

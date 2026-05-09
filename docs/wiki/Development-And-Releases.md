@@ -185,7 +185,9 @@ The workflow:
 - validates and compiles `esphome-smart-clock.yaml`
 - builds the PlatformIO hardware test firmware
 - builds the PlatformIO Bluetooth speaker firmware
+- stamps the ESPHome project version from the release tag
 - uploads all firmware binaries to a GitHub Release
+- uploads `esphome-smart-clock.ota.md5` and `firmware-manifest.json` for Home Assistant managed firmware updates
 
 Create a new release:
 
@@ -195,6 +197,74 @@ git push origin v1.0.0
 ```
 
 Use a new tag for each release, for example `v1.0.1`, `v1.1.0`, or `v2.0.0`.
+
+The normal smart-clock update assets are:
+
+- `esphome-smart-clock.ota.bin` - Home Assistant/ESPHome OTA update binary
+- `esphome-smart-clock.factory.bin` - USB/recovery binary
+- `esphome-smart-clock.ota.md5` - checksum used by ESPHome HTTP OTA
+- `firmware-manifest.json` - manifest read by the `Firmware Update` entity in Home Assistant
+
+The firmware reads the latest manifest from:
+
+`https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/firmware-manifest.json`
+
+Home Assistant can install updates manually from the `Firmware Update` entity or automatically with an automation that calls `update.install`.
+
+## GitHub To Home Assistant Update Flow
+
+The update system has two halves:
+
+- GitHub Actions builds and publishes release assets.
+- Home Assistant decides when to install those assets on the clock.
+
+The ESP32 does not poll GitHub and self-update silently. It exposes a normal
+Home Assistant `update` entity, and Home Assistant calls `update.install` when
+you approve it manually or when your automation runs.
+
+```mermaid
+flowchart TD
+  A["Push a version tag, for example v0.1.0-beta.8"] --> B["GitHub Actions release workflow starts"]
+  B --> C["Workflow validates ESPHome config and compiles firmware"]
+  C --> D["Workflow builds extra PlatformIO test firmwares"]
+  D --> E["Workflow creates release assets"]
+  E --> F["esphome-smart-clock.ota.bin"]
+  E --> G["esphome-smart-clock.ota.md5"]
+  E --> H["firmware-manifest.json"]
+  H --> I["ESPHome Firmware Update entity checks latest manifest"]
+  I --> J["Home Assistant shows update available"]
+  J --> K["User clicks install or automation calls update.install"]
+  K --> L["ESP32 downloads the OTA binary from GitHub"]
+  L --> M["ESPHome verifies MD5 and writes the OTA slot"]
+  M --> N["ESP32 reboots into the new firmware"]
+```
+
+What each release file does:
+
+- `esphome-smart-clock.ota.bin` is the file installed by Home Assistant/ESPHome OTA.
+- `esphome-smart-clock.ota.md5` is the checksum used to verify the downloaded OTA binary.
+- `firmware-manifest.json` tells the ESPHome update entity the latest version, OTA URL, checksum, and release URL.
+- `esphome-smart-clock.factory.bin` is only for USB first flash or recovery. It is not used by the Home Assistant update entity.
+
+The firmware uses this manifest URL:
+
+```text
+https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/firmware-manifest.json
+```
+
+The release workflow stamps `esphome.project.version` from the Git tag. For a
+tag named `v0.1.0-beta.8`, the firmware reports version `0.1.0-beta.8`.
+Home Assistant compares that installed version with the manifest version to
+decide whether `update.esp32_smart_clock_firmware_update` is `on`.
+
+Requirements:
+
+- The clock must already be running a firmware version that includes the
+  `Firmware Update` entity. Install that one manually first.
+- The ESP32 needs internet access to GitHub over HTTPS during the install.
+- Home Assistant must be connected to the ESPHome device.
+- If Home Assistant generated a different entity ID, select that entity in the
+  blueprint or edit the automation YAML.
 
 ## Verify Latest Packages Workflow
 

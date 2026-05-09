@@ -107,6 +107,7 @@ For Home Assistant, use `esphome-smart-clock.yaml` with ESPHome. It exposes:
 - display timing number entities for message/media/alarm/Wi-Fi/date/sensor screen durations and periodic intervals
 - `Speaker` media player entity for Home Assistant TTS/audio
 - `Hourly Beep Enabled` switch and quiet-hours controls for playing the local beep at the top of each hour
+- `Firmware Update` update entity for GitHub release firmware
 - `Alarm Enabled`, `Alarm Hour`, and `Alarm Minute` entities as alarm controls
 - an `esphome.alarm_triggered` Home Assistant event when the alarm time is reached
 - an `esphome.media_playback_failed` Home Assistant event when media starts and drops out quickly
@@ -120,6 +121,7 @@ Important limitations:
 - Wi-Fi music playback is through Home Assistant/ESPHome as a network media player. It is not a native Chromecast, AirPlay, Spotify Connect, or DLNA speaker.
 - ESPHome does not expose media stream size before playback starts, so oversized streams cannot be rejected early. Fast playback failures show `AUDIO ERR` on the display and fire `esphome.media_playback_failed`.
 - Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
+- The `Firmware Update` entity installs the GitHub release `esphome-smart-clock.ota.bin` through ESPHome HTTP OTA. It must use the OTA binary, not the factory binary.
 - The alarm trigger sets the matrix to `ALARM` and fires an `esphome.alarm_triggered` event. Use a Home Assistant automation to play TTS or `media_player.play_media` on the `Speaker` entity.
 - To allow the device to fire Home Assistant events, open the ESPHome integration device settings in Home Assistant and enable "Allow the device to perform Home Assistant actions".
 - The ESPHome config uses the Google Font `Noto Sans Hebrew`, so first compile needs internet access from the ESPHome builder.
@@ -180,4 +182,75 @@ actions:
     data:
       title: ESP32 smart clock audio failed
       message: "The stream stopped quickly. Use 16 kHz mono or a smaller stream."
+```
+
+Automatic GitHub firmware update during a quiet maintenance window:
+
+The easiest setup is the Home Assistant blueprint:
+
+[![Import ESP32 Smart Clock update automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_auto_update.yaml)
+
+After import, select `update.esp32_smart_clock_firmware_update`, choose the
+maintenance time, and save the automation.
+
+The same automation is also available as `docs/home-assistant-auto-update.yaml`
+if you prefer to paste YAML manually.
+
+```yaml
+alias: ESP32 smart clock auto firmware update
+triggers:
+  - trigger: time
+    at: "03:15:00"
+actions:
+  - action: homeassistant.update_entity
+    target:
+      entity_id: update.esp32_smart_clock_firmware_update
+  - delay: "00:00:10"
+  - condition: state
+    entity_id: update.esp32_smart_clock_firmware_update
+    state: "on"
+  - action: update.install
+    target:
+      entity_id: update.esp32_smart_clock_firmware_update
+mode: single
+```
+
+How the GitHub update works:
+
+```mermaid
+flowchart TD
+  A["GitHub release is created"] --> B["Release publishes OTA binary, MD5, and manifest"]
+  B --> C["Firmware Update entity reads firmware-manifest.json"]
+  C --> D{"Newer version?"}
+  D -->|"No"| E["Entity stays idle"]
+  D -->|"Yes"| F["Entity turns on in Home Assistant"]
+  F --> G["Blueprint automation runs at the selected time"]
+  G --> H["Home Assistant calls update.install"]
+  H --> I["ESP32 downloads esphome-smart-clock.ota.bin"]
+  I --> J["ESPHome verifies MD5, flashes OTA, and reboots"]
+```
+
+Notes:
+
+- Install the first firmware with `Firmware Update` manually. Future releases can
+  be handled by Home Assistant.
+- The update entity uses the GitHub release marked as latest.
+- The automation installs only when the update entity is `on`.
+- Use `esphome-smart-clock.ota.bin` for this path. The factory binary is only
+  for USB/recovery flashing.
+
+Notification-only GitHub firmware update check:
+
+```yaml
+alias: ESP32 smart clock firmware update available
+triggers:
+  - trigger: state
+    entity_id: update.esp32_smart_clock_firmware_update
+    to: "on"
+actions:
+  - action: persistent_notification.create
+    data:
+      title: ESP32 smart clock firmware update
+      message: "A new GitHub release is ready. Open the Firmware Update entity to install it."
+mode: single
 ```

@@ -1,0 +1,37 @@
+blueprint:
+  name: ESP32 Smart Clock GitHub Firmware Auto Update
+  description: >
+    Refresh the ESP32 Smart Clock GitHub release-backed update entity and install
+    the newest OTA firmware during a scheduled maintenance window.
+  domain: automation
+  input:
+    firmware_update_entity:
+      name: Firmware update entity
+      description: Select the ESP32 Smart Clock Firmware Update entity.
+      selector:
+        entity:
+          domain: update
+    update_time:
+      name: Update check time
+      description: Time of day to check GitHub releases and install if an update is available.
+      default: "03:15:00"
+      selector:
+        time:
+
+mode: single
+
+trigger:
+  - platform: time
+    at: !input update_time
+
+action:
+  - service: homeassistant.update_entity
+    target:
+      entity_id: !input firmware_update_entity
+  - delay: "00:00:10"
+  - condition: state
+    entity_id: !input firmware_update_entity
+    state: "on"
+  - service: update.install
+    target:
+      entity_id: !input firmware_update_entity
