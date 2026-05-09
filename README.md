@@ -34,6 +34,18 @@ The button imports the automation blueprint. Select
 automation. The first firmware that adds this update entity still has to be
 installed manually.
 
+## Calendar Agenda Announcements
+
+Home Assistant can read today's events from a calendar, print a compact agenda
+on the LED matrix, and optionally speak the same agenda through the clock
+speaker. The automation can run every day at a selected time, from an
+`input_button` helper, or both.
+
+[![Import ESP32 Smart Clock calendar agenda automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_calendar_agenda.yaml)
+
+Create an `input_button` helper if you want a dashboard button, then import the
+blueprint and select your calendar, clock speaker, and ESPHome display action.
+
 ## Firmware Options
 
 | Firmware | Use for | Home Assistant | Wi-Fi | Bluetooth music |
@@ -75,6 +87,7 @@ Detailed documentation was moved out of the README:
 - [Hardware And Power](docs/wiki/Hardware-And-Power.md)
 - [Install And Home Assistant](docs/wiki/Install-And-Home-Assistant.md)
 - [Home Assistant Dashboard](docs/wiki/Home-Assistant-Dashboard.md)
+- [Calendar And Announcements](docs/wiki/Calendar-And-Announcements.md)
 - [Display Behavior](docs/wiki/Display-Behavior.md)
 - [Audio And Music](docs/wiki/Audio-And-Music.md)
 - [Logs And Troubleshooting](docs/wiki/Logs-And-Troubleshooting.md)

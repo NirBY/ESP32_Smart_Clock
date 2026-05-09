@@ -1,0 +1,183 @@
+blueprint:
+  name: ESP32 Smart Clock Today's Calendar Events
+  description: >
+    Read today's events from a Home Assistant calendar, show a compact agenda on
+    the ESP32 Smart Clock matrix, and optionally speak the same agenda through
+    the clock speaker. Trigger it at a daily time, from an input button, or both.
+  domain: automation
+  input:
+    calendar_entity:
+      name: Calendar
+      description: Calendar entity to read today's events from.
+      selector:
+        entity:
+          domain: calendar
+    display_action:
+      name: Clock display action
+      description: ESPHome action that writes a temporary message to the matrix.
+      default: esphome.esp32_smart_clock_show_message
+      selector:
+        text:
+    enable_display:
+      name: Show events on the clock display
+      description: Send the compact agenda to the LED matrix.
+      default: true
+      selector:
+        boolean:
+    enable_tts:
+      name: Speak events with TTS
+      description: Speak the agenda through the selected media player.
+      default: true
+      selector:
+        boolean:
+    tts_entity:
+      name: TTS provider
+      description: TTS engine to use when speech is enabled.
+      default: tts.home_assistant_cloud
+      selector:
+        entity:
+          domain: tts
+    speaker_entity:
+      name: Clock speaker media player
+      description: Media player entity exposed by the ESP32 Smart Clock.
+      default: media_player.esp32_smart_clock_speaker
+      selector:
+        entity:
+          domain: media_player
+    enable_scheduled_run:
+      name: Run every day at a specific time
+      description: Turn this off when you only want the helper button trigger.
+      default: true
+      selector:
+        boolean:
+    schedule_time:
+      name: Daily agenda time
+      description: Time of day to read today's calendar events.
+      default: "07:30:00"
+      selector:
+        time:
+    manual_button_entity:
+      name: Manual run input button
+      description: >
+        Optional. Create an input_button helper and select it here to run the
+        agenda when clicked. The default dummy entity lets the scheduled trigger
+        work even when no button helper exists.
+      default: input_button.esp32_smart_clock_today_events
+      selector:
+        entity:
+          domain: input_button
+    max_events:
+      name: Maximum events
+      description: Maximum number of events to show and speak.
+      default: 5
+      selector:
+        number:
+          min: 1
+          max: 10
+          mode: slider
+    display_prefix:
+      name: Display prefix
+      description: Text shown before the compact matrix agenda.
+      default: "Today:"
+      selector:
+        text:
+    no_events_display_message:
+      name: Display message when there are no events
+      default: "No events today"
+      selector:
+        text:
+    tts_prefix:
+      name: TTS prefix
+      description: Spoken text before the event list.
+      default: "Today's events are"
+      selector:
+        text:
+    no_events_tts_message:
+      name: TTS message when there are no events
+      default: "You have no calendar events today."
+      selector:
+        text:
+
+mode: queued
+max: 3
+
+trigger:
+  - platform: time
+    at: !input schedule_time
+    id: scheduled
+  - platform: state
+    entity_id: !input manual_button_entity
+    id: manual_button
+
+variables:
+  calendar_entity: !input calendar_entity
+  enable_scheduled_run: !input enable_scheduled_run
+  enable_display: !input enable_display
+  enable_tts: !input enable_tts
+  max_events: !input max_events
+  display_prefix: !input display_prefix
+  no_events_display_message: !input no_events_display_message
+  tts_prefix: !input tts_prefix
+  no_events_tts_message: !input no_events_tts_message
+
+condition:
+  - condition: template
+    value_template: "{{ trigger.id != 'scheduled' or enable_scheduled_run }}"
+
+action:
+  - action: calendar.get_events
+    target:
+      entity_id: !input calendar_entity
+    data:
+      start_date_time: "{{ today_at('00:00') }}"
+      end_date_time: "{{ today_at('23:59:59') }}"
+    response_variable: agenda
+
+  - variables:
+      today_events: "{{ agenda[calendar_entity].events if agenda is defined and calendar_entity in agenda else [] }}"
+      display_message: >-
+        {% set events = today_events %}
+        {% if events | count == 0 %}
+          {{ no_events_display_message }}
+        {% else %}
+          {% set ns = namespace(items=[]) %}
+          {% for event in events[:max_events | int] %}
+            {% set start = event.start | string %}
+            {% set when = 'All day' if start | length <= 10 else (as_timestamp(start) | timestamp_custom('%H:%M', true)) %}
+            {% set ns.items = ns.items + [when ~ ' ' ~ event.summary] %}
+          {% endfor %}
+          {{ display_prefix }} {{ ns.items | join('; ') }}
+        {% endif %}
+      tts_message: >-
+        {% set events = today_events %}
+        {% if events | count == 0 %}
+          {{ no_events_tts_message }}
+        {% else %}
+          {{ tts_prefix }}
+          {% for event in events[:max_events | int] %}
+            {% set start = event.start | string %}
+            {% set when = 'all day' if start | length <= 10 else (as_timestamp(start) | timestamp_custom('%H:%M', true)) %}
+            {{ event.summary }} at {{ when }}{% if not loop.last %}. {% else %}.{% endif %}
+          {% endfor %}
+        {% endif %}
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ enable_display }}"
+        sequence:
+          - action: !input display_action
+            data:
+              message: "{{ display_message }}"
+
+  - choose:
+      - conditions:
+          - condition: template
+            value_template: "{{ enable_tts }}"
+        sequence:
+          - action: tts.speak
+            target:
+              entity_id: !input tts_entity
+            data:
+              media_player_entity_id: !input speaker_entity
+              message: "{{ tts_message }}"

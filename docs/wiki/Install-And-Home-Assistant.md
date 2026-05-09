@@ -154,6 +154,14 @@ data:
   message: "Wake up"
 ```
 
+Calendar agenda on the display and speaker:
+
+[![Import ESP32 Smart Clock calendar agenda automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_calendar_agenda.yaml)
+
+Use this blueprint when you want a morning agenda at a fixed time, a dashboard
+button that reads today's events on demand, or both. See
+[Calendar And Announcements](Calendar-And-Announcements.md) for the full setup.
+
 Alarm event automation example:
 
 ```yaml
