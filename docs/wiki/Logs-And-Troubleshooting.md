@@ -101,6 +101,26 @@ logger:
 
 Then start playback and copy the log lines from a few seconds before playback starts until a few seconds after the noise starts. Useful lines include tags like `[audio]`, `[i2s_audio.speaker]`, `[speaker_media_player]`, and `[ring_buffer]`.
 
+The normal firmware keeps audio logging at `INFO` for daily use. DEBUG audio logging is useful for diagnosis, but it creates more serial output and can steal CPU time while streaming.
+
+## Music Assistant Playback Fails
+
+If playback starts and then logs this:
+
+```text
+[E][i2s_audio.speaker]: Not enough memory
+```
+
+the ESP32 ran out of runtime RAM while trying to feed the I2S speaker. This was reproduced when testing a 22.05 kHz audio path, so the firmware was returned to the stable 16 kHz mono path.
+
+Current expected startup line:
+
+```text
+Media playback started: media_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms
+```
+
+If a media stream stops very quickly after starting, the clock shows `AUDIO ERR` and fires the Home Assistant event `esphome.media_playback_failed`. Use that event for notifications or automations. ESPHome does not expose stream size/bitrate before playback starts, so the firmware cannot reject large streams before trying them.
+
 For Wi-Fi problems, use:
 
 ```yaml

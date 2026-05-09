@@ -198,9 +198,26 @@ Use a new tag for each release, for example `v1.0.1`, `v1.1.0`, or `v2.0.0`.
 
 ## Verify Latest Packages Workflow
 
-The `Verify latest packages` workflow checks current ESPHome and PlatformIO packages, builds the firmware, and opens a manual-review PR with the verification report.
+The `Verify latest packages` workflow checks current ESPHome and PlatformIO packages, builds the firmware, and pushes a manual-review branch with the verification report.
 
 The workflow is intentionally not a release workflow. It verifies package updates and asks for manual review before anything is merged.
+
+## ESPHome Upgrade PR Workflow
+
+The `ESPHome Upgrade PR` workflow checks PyPI for the latest stable ESPHome release every Monday and can also be run manually.
+
+It uses `ESPHOME_VERSION` as the last verified ESPHome version. When a newer ESPHome version is found, the workflow:
+
+- installs that exact ESPHome version
+- validates `esphome-smart-clock.yaml`
+- compiles the ESPHome firmware
+- builds the PlatformIO hardware test firmware
+- builds the PlatformIO Bluetooth speaker firmware
+- updates `ESPHOME_VERSION`
+- writes `.github/reports/esphome-upgrade.md`
+- opens a pull request for review
+
+This keeps upgrades safe: ESPHome changes are tested first, then merged and released manually.
 
 If GitHub Actions cannot create the PR, enable this repository setting:
 

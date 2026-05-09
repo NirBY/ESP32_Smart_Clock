@@ -42,18 +42,18 @@ esp32:
 logger:
   # DEBUG logging keeps more strings/buffers active and can steal CPU while audio
   # is playing. INFO still keeps useful boot and troubleshooting messages.
-  level: DEBUG
+  level: INFO
   logs:
-    audio: DEBUG
+    audio: INFO
     api: INFO
     component: INFO
-    i2s_audio.speaker: DEBUG
-    media_player: DEBUG
-    ring_buffer: DEBUG
+    i2s_audio.speaker: INFO
+    media_player: INFO
+    ring_buffer: WARN
     sensor: INFO
-    settings: DEBUG
-    speaker: DEBUG
-    speaker_media_player: DEBUG
+    settings: INFO
+    speaker: INFO
+    speaker_media_player: INFO
     time: INFO
     wifi: INFO
     aht10: WARN
@@ -203,7 +203,23 @@ globals:
     type: bool
     restore_value: no
     initial_value: 'false'
+  - id: hourly_beep_pending
+    type: bool
+    restore_value: no
+    initial_value: 'false'
   - id: audio_playback_active
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: media_stream_playing
+    type: bool
+    restore_value: no
+    initial_value: 'false'
+  - id: media_playback_started_ms
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: media_playback_failed
     type: bool
     restore_value: no
     initial_value: 'false'
@@ -363,6 +379,24 @@ time:
           - lambda: |-
               const float seconds = isnan(id(date_message_seconds).state) ? 3.0f : id(date_message_seconds).state;
               id(date_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
+              if (id(hourly_beep_enabled).state && millis() >= 15000) {
+                auto now = id(ntp_time).now();
+                const int hour = now.hour;
+                const int quiet_start = isnan(id(hourly_beep_quiet_start_hour).state) ? 22 : (int) id(hourly_beep_quiet_start_hour).state;
+                const int quiet_end = isnan(id(hourly_beep_quiet_end_hour).state) ? 7 : (int) id(hourly_beep_quiet_end_hour).state;
+                const bool quiet_window_active = id(hourly_beep_quiet_hours_enabled).state
+                  && quiet_start != quiet_end
+                  && (quiet_start < quiet_end
+                    ? (hour >= quiet_start && hour < quiet_end)
+                    : (hour >= quiet_start || hour < quiet_end));
+                if (quiet_window_active) {
+                  ESP_LOGI("audio", "Hourly beep skipped by quiet hours (hour=%d, quiet=%02d:00-%02d:00)",
+                           hour, quiet_start, quiet_end);
+                  return;
+                }
+                ESP_LOGI("audio", "Hourly beep queued");
+                id(hourly_beep_pending) = true;
+              }
           - component.update: matrix_display
 
 script:
@@ -466,7 +500,7 @@ text:
       - component.update: matrix_display
 
 interval:
-  # Play the volume feedback beep shortly after Home Assistant changes volume.
+  # Play small local beeps shortly after they are requested.
   # Keeping this outside on_volume avoids referencing the embedded media file
   # while the media_player component is still being generated.
   - interval: 250ms
@@ -474,16 +508,22 @@ interval:
       - if:
           condition:
             lambda: |-
-              return id(volume_beep_pending);
+              return id(volume_beep_pending) || id(hourly_beep_pending);
           then:
             - lambda: |-
+                const bool volume_beep = id(volume_beep_pending);
+                const bool hourly_beep = id(hourly_beep_pending);
                 if (id(audio_playback_active) || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_PLAYING || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING) {
-                  ESP_LOGI("audio", "Skipping volume feedback beep while audio is active (state=%d)", (int)id(clock_speaker).state);
+                  ESP_LOGI("audio", "Skipping pending beep while audio is active (volume=%s, hourly=%s, state=%d)",
+                           volume_beep ? "true" : "false", hourly_beep ? "true" : "false", (int)id(clock_speaker).state);
                   id(volume_beep_pending) = false;
+                  id(hourly_beep_pending) = false;
                   return;
                 }
-                ESP_LOGI("audio", "Playing volume feedback beep (audio_playback_active=false, state=%d)", (int)id(clock_speaker).state);
+                ESP_LOGI("audio", "Playing local beep (volume=%s, hourly=%s, audio_playback_active=false, state=%d)",
+                         volume_beep ? "true" : "false", hourly_beep ? "true" : "false", (int)id(clock_speaker).state);
                 id(volume_beep_pending) = false;
+                id(hourly_beep_pending) = false;
             - if:
                 condition:
                   lambda: |-
@@ -723,6 +763,38 @@ number:
           ESP_LOGI("settings", "Media Message Seconds changed to %.0f", x);
 
   - platform: template
+    name: "Hourly Beep Quiet Start Hour"
+    id: hourly_beep_quiet_start_hour
+    device_id: audio_device
+    entity_category: config
+    icon: "mdi:weather-night"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 22
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Hourly Beep Quiet Start Hour changed to %.0f", x);
+
+  - platform: template
+    name: "Hourly Beep Quiet End Hour"
+    id: hourly_beep_quiet_end_hour
+    device_id: audio_device
+    entity_category: config
+    icon: "mdi:weather-sunny"
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 23
+    step: 1
+    initial_value: 7
+    set_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Hourly Beep Quiet End Hour changed to %.0f", x);
+
+  - platform: template
     name: "Alarm Message Seconds"
     id: alarm_message_seconds
     device_id: alarm_device
@@ -862,7 +934,7 @@ select:
     options:
       - "HH:MM:SS"
       - "HH:MM"
-    initial_option: "HH:MM:SS"
+    initial_option: "HH:MM"
     set_action:
       - lambda: |-
           ESP_LOGI("settings", "Time Format changed to %s", x.c_str());
@@ -901,6 +973,37 @@ switch:
     turn_off_action:
       - lambda: |-
           ESP_LOGW("settings", "Speaker Connected changed to OFF");
+
+  - platform: template
+    name: "Hourly Beep Enabled"
+    id: hourly_beep_enabled
+    device_id: audio_device
+    entity_category: config
+    icon: "mdi:clock-alert-outline"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Hourly Beep Enabled changed to ON");
+    turn_off_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Hourly Beep Enabled changed to OFF");
+          id(hourly_beep_pending) = false;
+
+  - platform: template
+    name: "Hourly Beep Quiet Hours Enabled"
+    id: hourly_beep_quiet_hours_enabled
+    device_id: audio_device
+    entity_category: config
+    icon: "mdi:moon-waning-crescent"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_ON
+    turn_on_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Hourly Beep Quiet Hours Enabled changed to ON");
+    turn_off_action:
+      - lambda: |-
+          ESP_LOGI("settings", "Hourly Beep Quiet Hours Enabled changed to OFF");
 
   - platform: template
     name: "Alarm Enabled"
@@ -1620,6 +1723,9 @@ media_player:
       - lambda: |-
           const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;
           id(audio_playback_active) = true;
+          id(media_stream_playing) = true;
+          id(media_playback_started_ms) = millis();
+          id(media_playback_failed) = false;
           ESP_LOGI("audio", "Media playback started: media_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms");
           id(media_message) = "MUSIC";
           id(media_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
@@ -1628,6 +1734,8 @@ media_player:
       - lambda: |-
           const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;
           id(audio_playback_active) = true;
+          id(media_stream_playing) = false;
+          id(media_playback_failed) = false;
           ESP_LOGI("audio", "Announcement playback started: announcement_pipeline=WAV 16000Hz mono, i2s=right stand_msb 16bit, buffer=500ms, timeout=250ms");
           id(media_message) = "SPEAKER";
           id(media_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
@@ -1635,20 +1743,46 @@ media_player:
     on_pause:
       - lambda: |-
           id(audio_playback_active) = false;
+          id(media_stream_playing) = false;
+          id(media_playback_failed) = false;
           ESP_LOGI("audio", "Media playback paused");
           id(media_message).clear();
           id(media_message_until) = 0;
       - component.update: matrix_display
     on_idle:
       - lambda: |-
+          const uint32_t elapsed_ms = millis() - id(media_playback_started_ms);
+          id(media_playback_failed) = id(media_stream_playing) && elapsed_ms < 8000;
           id(audio_playback_active) = false;
-          ESP_LOGI("audio", "Media player idle");
+          id(media_stream_playing) = false;
+          ESP_LOGI("audio", "Media player idle after %u ms (failed_fast=%s)",
+                   (unsigned) elapsed_ms, id(media_playback_failed) ? "true" : "false");
           id(media_message).clear();
-          id(media_message_until) = 0;
+          if (id(media_playback_failed)) {
+            id(media_message) = "AUDIO ERR";
+            id(media_message_until) = millis() + 5000;
+          } else {
+            id(media_message_until) = 0;
+          }
+      - if:
+          condition:
+            lambda: |-
+              return id(media_playback_failed);
+          then:
+            - homeassistant.event:
+                event: esphome.media_playback_failed
+                data:
+                  device: esp32-smart-clock
+                  reason: playback_stopped_early_or_unsupported_stream
+                  hint: use_16khz_mono_or_a_smaller_stream
+            - lambda: |-
+                id(media_playback_failed) = false;
       - component.update: matrix_display
     on_turn_off:
       - lambda: |-
           id(audio_playback_active) = false;
+          id(media_stream_playing) = false;
+          id(media_playback_failed) = false;
           ESP_LOGI("audio", "Media player turned off");
           id(media_message).clear();
           id(media_message_until) = 0;

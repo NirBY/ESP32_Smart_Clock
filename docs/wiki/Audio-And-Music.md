@@ -2,14 +2,24 @@
 
 ## Current Audio Design
 
-Audio playback is configured for low-memory stability on a normal ESP32 without PSRAM: mono, 16 kHz, smaller speaker buffers, and a smaller media-player buffer. This is best for TTS/announcements and simple Home Assistant audio. High-bitrate music streaming can still stress RAM; for direct music playback from phones/PCs, use the separate Bluetooth speaker firmware.
+Audio playback is configured for low-memory stability on a normal ESP32 without PSRAM. The stable ESPHome path is:
+
+- WAV pipeline
+- mono
+- 16 kHz
+- 16-bit samples
+- `500ms` I2S output buffer
+- `12000` media-player buffer
+- mixer plus resampler speakers for separate media and announcement paths
+
+This is best for TTS/announcements and simple Home Assistant audio. A 22.05 kHz test compiled, but failed at runtime with `i2s_audio.speaker: Not enough memory`, so the firmware intentionally stays at 16 kHz on this board. High-bitrate music streaming can still stress RAM; for direct music playback from phones/PCs, use the separate Bluetooth speaker firmware or an ESP32 board with PSRAM.
 
 The ESPHome firmware uses:
 
 - NS4168 I2S Class-D amplifier module
 - `i2s_audio` speaker output
 - `speaker` media player platform
-- local `media/volume-beep.wav` for volume feedback
+- local `media/volume-beep.wav` for volume feedback and the optional hourly beep
 
 ## Music Casting Options
 
@@ -45,9 +55,19 @@ data:
 
 The exact `media_player` entity ID may be different in your Home Assistant. Use Developer Tools > States to confirm it.
 
-## Volume Beep
+## Local Beeps
 
 Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
+
+If `Hourly Beep Enabled` is on, the same local beep also plays at the top of each hour. The switch is restored by Home Assistant and defaults to on. The firmware skips pending beeps while audio is already playing or announcing.
+
+Hourly beep quiet hours are also configurable from Home Assistant:
+
+- `Hourly Beep Quiet Hours Enabled` defaults to on.
+- `Hourly Beep Quiet Start Hour` defaults to `22`.
+- `Hourly Beep Quiet End Hour` defaults to `7`.
+- Overnight ranges are supported, so `22` to `7` means no hourly beep from 22:00 until before 07:00.
+- If start and end are the same hour, the quiet window is ignored.
 
 The beep file is `media/volume-beep.wav`. It is embedded into the ESPHome firmware at compile time, so if you change it, compile and upload again.
 
@@ -59,7 +79,7 @@ The current beep format is:
 - short fade-in/fade-out
 - silence at the beginning and end to reduce pop/noise
 
-The firmware ignores volume-change beep requests during the first 15 seconds after boot. This avoids a boot-time beep when Home Assistant restores the media-player volume.
+The firmware ignores volume-change beep requests during the first 15 seconds after boot. The hourly beep also waits until the device has been up for at least 15 seconds and is skipped during quiet hours. This avoids a boot-time beep when Home Assistant restores the media-player volume or time sync lands exactly on an hour.
 
 ## Speaker Wiring
 
@@ -103,8 +123,10 @@ To go back to Home Assistant mode, flash `esphome-smart-clock.yaml` again from E
 
 If there is no sound:
 
-- If logs show `Not enough memory` or `ESP_ERR_NO_MEM`, flash the latest ESPHome YAML.
+- If logs show `Not enough memory` or `ESP_ERR_NO_MEM`, the stream is too heavy for the current no-PSRAM ESP32. Use lower-quality/mono media or the Bluetooth firmware.
 - Check logs while playing audio.
+- ESPHome does not expose the incoming stream size before playback starts. The firmware can report fast playback dropouts, but it cannot reject a stream early based on file size or bitrate.
+- Fast media dropouts show `AUDIO ERR` on the matrix and fire the Home Assistant event `esphome.media_playback_failed`.
 - Confirm the amplifier has 5V power.
 - Confirm all grounds are common.
 - Try a lower volume first.
@@ -118,6 +140,14 @@ If audio is noisy:
 - Check that `DIN`, `BCLK`, and `LRCLK/WS` are not swapped.
 - Capture audio logs as described in [Logs And Troubleshooting](Logs-And-Troubleshooting.md).
 - Confirm what format Home Assistant is sending. The current ESPHome speaker pipeline is tuned for low-memory 16 kHz mono playback.
+
+Example automation trigger for playback failures:
+
+```yaml
+trigger:
+  - platform: event
+    event_type: esphome.media_playback_failed
+```
 
 ## Actual Amplifier Module
 

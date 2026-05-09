@@ -102,6 +102,18 @@ views:
             name: Speaker
           - entity: switch.esp32_smart_clock_speaker_connected
             name: Speaker connected
+          - entity: switch.esp32_smart_clock_hourly_beep_enabled
+            name: Hourly beep
+            icon: mdi:clock-alert-outline
+          - entity: switch.esp32_smart_clock_hourly_beep_quiet_hours_enabled
+            name: Hourly beep quiet hours
+            icon: mdi:moon-waning-crescent
+          - entity: number.esp32_smart_clock_hourly_beep_quiet_start_hour
+            name: Quiet start hour
+            icon: mdi:weather-night
+          - entity: number.esp32_smart_clock_hourly_beep_quiet_end_hour
+            name: Quiet end hour
+            icon: mdi:weather-sunny
           - entity: number.esp32_smart_clock_media_message_seconds
             name: Media label seconds
 
@@ -110,7 +122,9 @@ views:
           **Audio notes:** the speaker entity handles playback. `Speaker
           connected` is a manual health hint because the I2S amplifier has no
           detection pin. If it is off, the system alert rotation can show
-          `NO SPK`.
+          `NO SPK`. `Hourly beep` plays the same local beep as volume feedback
+          at the top of each hour, skips it while audio is already active, and
+          suppresses it during quiet hours such as `22` to `7`.
 
       - type: entities
         title: System Alerts
@@ -148,4 +162,3 @@ views:
             name: BMP280 temperature
           - entity: sensor.esp32_smart_clock_pressure
             name: Pressure
-

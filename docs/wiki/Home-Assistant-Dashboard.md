@@ -17,7 +17,7 @@ The firmware exposes these logical Home Assistant devices:
 | --- | --- |
 | ESP32 Smart Clock Display | Matrix brightness, time format, manual message text, and display timing controls. |
 | ESP32 Smart Clock Alarm | Alarm enable, hour, minute, and alarm message duration. |
-| ESP32 Smart Clock Audio | Speaker playback, speaker wiring hint, and media label duration. |
+| ESP32 Smart Clock Audio | Speaker playback, speaker wiring hint, hourly beep, quiet hours, and media label duration. |
 | ESP32 Smart Clock System | Startup, Wi-Fi, network, sensor, speaker, and power alert controls. |
 | ESP32 Smart Clock Sensors | AHT20 and BMP280 readings. |
 
@@ -51,4 +51,3 @@ entity IDs after pasting it into the dashboard editor.
 For a single-card workflow, you can also go to the device page and use
 Add to Dashboard, but Home Assistant chooses the generated card layout there.
 The YAML template gives a cleaner, intentional control surface.
-

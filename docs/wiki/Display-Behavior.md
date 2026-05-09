@@ -4,12 +4,12 @@ The display follows a fixed 7-rule spec. Anything not covered by these rules fal
 
 ## Clock Display Logic
 
-1. **Default:** show the clock. Time is synced from Home Assistant as soon as the native API connects, with SNTP kept as an internet fallback refreshed every `1h`. When Wi-Fi connects, the firmware immediately restarts SNTP and retries every `15 seconds` until time becomes valid. Before time is valid, the display shows `SYNC`, `NO WIFI`, or `NO NET` instead of staying on `--:--`, unless `Show System Alerts` is disabled. The `Time Format` selector chooses either `HH:MM:SS` or the larger long-distance `HH:MM` view with a blinking colon.
+1. **Default:** show the clock. Time is synced from Home Assistant as soon as the native API connects, with SNTP kept as an internet fallback refreshed every `1h`. When Wi-Fi connects, the firmware immediately restarts SNTP and retries every `15 seconds` until time becomes valid. Before time is valid, the display shows `SYNC`, `NO WIFI`, or `NO NET` instead of staying on `--:--`, unless `Show System Alerts` is disabled. The `Time Format` selector chooses either `HH:MM:SS` or the larger long-distance `HH:MM` view with a blinking colon. The fallback/default format is `HH:MM`.
 2. **Screen message from Home Assistant:** show the message for `10 seconds` by default, then return to the clock. The duration is configurable with `Screen Message Seconds`. Sent via the `esphome.esp32_smart_clock_show_message` action or by writing the `Screen Message` text entity.
 3. **Indoor sensors:** every `30 seconds` by default, show temperature and humidity for `3 seconds` by default. Both values are configurable from Home Assistant. The matrix uses a fixed non-scrolling layout like `24°C 57%`; if data is missing, it shows `00°C 00%`. Barometric pressure is still exposed to Home Assistant, but it is not shown on the LED matrix.
-4. **Music / TTS:** while the speaker is active, show a label (`MUSIC` for media playback, `SPEAKER` for TTS/announcements). The label clears immediately on pause / idle / turn-off, and is hard-capped at `10 seconds` by default if no clear event arrives. The cap is configurable with `Media Message Seconds`.
+4. **Music / TTS:** while the speaker is active, show a label (`MUSIC` for media playback, `SPEAKER` for TTS/announcements). The label clears immediately on pause / idle / turn-off, and is hard-capped at `10 seconds` by default if no clear event arrives. If media starts and fails quickly, show `AUDIO ERR` for `5 seconds`. The normal cap is configurable with `Media Message Seconds`.
 5. **Wi-Fi disconnected:** every `30 seconds` by default, show `NO WIFI` for `3 seconds` by default until Wi-Fi recovers. Both values are configurable from Home Assistant.
-6. **Date and day:** at the top of every hour, show day-of-week and date for `3 seconds` by default. The duration is configurable with `Date Message Seconds`.
+6. **Date and day:** at the top of every hour, show day-of-week and date for `3 seconds` by default. The duration is configurable with `Date Message Seconds`. If `Hourly Beep Enabled` is on and the current hour is outside the configured quiet window, the clock also queues the local beep at the same time.
 7. **Invalid or missing data:** if any branch above has bad / `NaN` / not-yet-valid data (NTP not synced, sensor read failed, empty message, etc.), that branch is skipped and the clock is shown instead.
 
 ## Display Priority Order
@@ -33,10 +33,11 @@ This is why a Home Assistant message hides a sensor screen, but a sensor screen 
 | `esphome.esp32_smart_clock_show_message` action or `Screen Message` text entity | message text | `Screen Message Seconds` (default 10 s) | sets `text_message_until` in `api.actions.show_message` and `text.set_action` |
 | Music playback starts | `MUSIC` | `Media Message Seconds` (default 10 s), cleared on pause/idle/off | `media_player.on_play` sets `media_message_until` |
 | TTS / announcement starts | `SPEAKER` | `Media Message Seconds` (default 10 s), cleared on pause/idle/off | `media_player.on_announcement` sets `media_message_until` |
+| Music playback starts then stops quickly | `AUDIO ERR` | 5 s | `media_player.on_idle` detects a fast media dropout and fires `esphome.media_playback_failed` |
 | Music pauses, idles, or turns off | returns to clock | immediately | `on_pause` / `on_idle` / `on_turn_off` clear `media_message_until` |
 | Startup time sync | `SYNC`, then `NO NET` if retries continue | `System Alert Seconds` every `System Alert Interval Seconds` | Wi-Fi `on_connect` and a 15-second retry loop restart SNTP until time is valid |
 | Wi-Fi disconnected | `NO WIFI` | `System Alert Seconds` / `Wi-Fi Alert Seconds` | system alert rotation and the legacy Wi-Fi alert both require `Show System Alerts` |
-| Top of each hour | `Day DD/MM` | `Date Message Seconds` (default 3 s) | `time.on_time` with `seconds: 0, minutes: 0` sets `date_message_until` |
+| Top of each hour | `Day DD/MM` plus optional local beep | `Date Message Seconds` (default 3 s) | `time.on_time` with `seconds: 0, minutes: 0` sets `date_message_until` and queues the hourly beep when `Hourly Beep Enabled` is on and quiet hours do not apply |
 | Indoor sensors | fixed `temp humidity`, for example `24°C 57%`; missing data shows `00°C 00%` | `Sensor Message Seconds` every `Sensor Message Interval Seconds` | dynamic `interval: 1s` check sets `sensor_message_until`; the display uses a fixed non-scrolling pixel layout |
 | Alarm time reached | `ALARM` | `Alarm Message Seconds` (default 10 s) | `alarm_triggered` script sets `text_message_until` |
 | System health alert | `NO SENSOR`, `NO AHT`, `NO BMP`, `NO SPK`, `LOW PWR`, `NO NET`, or `NO WIFI` | `System Alert Seconds` every `System Alert Interval Seconds` | dynamic alert rotation, enabled by the `Show System Alerts` switch. Sensor alerts use stale-update detection: if AHT20 or BMP280 stops publishing for about `75 seconds`, the matching alert is shown and a warning is logged. |
@@ -54,9 +55,9 @@ Brightness changes are sent directly to the MAX7219 chips at runtime and are als
 
 Temporary display timings can also be changed from Home Assistant. The ESPHome firmware exposes number entities for `System Alert Seconds`, `System Alert Interval Seconds`, `Screen Message Seconds`, `Media Message Seconds`, `Alarm Message Seconds`, `Wi-Fi Alert Seconds`, `Wi-Fi Alert Interval Seconds`, `Date Message Seconds`, `Sensor Message Seconds`, and `Sensor Message Interval Seconds`. These values are restored after reboot.
 
-The `Time Format` selector is restored after reboot. `HH:MM:SS` keeps the compact seconds display, while `HH:MM` removes seconds so the hour and minute digits can be drawn wider for better readability from far away. In the `HH:MM` format, the colon blinks once per second.
+The `Time Format` selector is restored after reboot. `HH:MM:SS` keeps the compact seconds display, while `HH:MM` removes seconds so the hour and minute digits can be drawn wider for better readability from far away. In the `HH:MM` format, the colon blinks once per second. If Home Assistant has no restored value yet, the firmware starts from `HH:MM`.
 
-`Show System Alerts` is the Home Assistant checkbox that enables or skips matrix health warnings. `Speaker Connected` is a manual checkbox because the I2S amplifier/speaker wiring has no detection pin; turn it off to rotate a `NO SPK` alert.
+`Show System Alerts` is the Home Assistant checkbox that enables or skips matrix health warnings. `Speaker Connected` is a manual checkbox because the I2S amplifier/speaker wiring has no detection pin; turn it off to rotate a `NO SPK` alert. `Hourly Beep Enabled` controls whether the local beep plays at the top of each hour, and the quiet-hours controls suppress it during a configured hour range such as `22:00` to `07:00`.
 
 ## Song Name Limitation
 

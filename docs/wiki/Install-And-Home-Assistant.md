@@ -106,8 +106,10 @@ For Home Assistant, use `esphome-smart-clock.yaml` with ESPHome. It exposes:
 - `Display Brightness` number entity, range `0`-`15`
 - display timing number entities for message/media/alarm/Wi-Fi/date/sensor screen durations and periodic intervals
 - `Speaker` media player entity for Home Assistant TTS/audio
+- `Hourly Beep Enabled` switch and quiet-hours controls for playing the local beep at the top of each hour
 - `Alarm Enabled`, `Alarm Hour`, and `Alarm Minute` entities as alarm controls
 - an `esphome.alarm_triggered` Home Assistant event when the alarm time is reached
+- an `esphome.media_playback_failed` Home Assistant event when media starts and drops out quickly
 - API actions:
   - `esphome.esp32_smart_clock_show_message`
   - `esphome.esp32_smart_clock_clear_message`
@@ -116,6 +118,7 @@ Important limitations:
 
 - This hardware has a speaker only, not a microphone. It can play voice/TTS sent from Home Assistant, but it cannot listen for voice commands unless you add an I2S microphone.
 - Wi-Fi music playback is through Home Assistant/ESPHome as a network media player. It is not a native Chromecast, AirPlay, Spotify Connect, or DLNA speaker.
+- ESPHome does not expose media stream size before playback starts, so oversized streams cannot be rejected early. Fast playback failures show `AUDIO ERR` on the display and fire `esphome.media_playback_failed`.
 - Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
 - The alarm trigger sets the matrix to `ALARM` and fires an `esphome.alarm_triggered` event. Use a Home Assistant automation to play TTS or `media_player.play_media` on the `Speaker` entity.
 - To allow the device to fire Home Assistant events, open the ESPHome integration device settings in Home Assistant and enable "Allow the device to perform Home Assistant actions".
@@ -163,4 +166,18 @@ actions:
     data:
       media_player_entity_id: media_player.esp32_smart_clock_speaker
       message: "Wake up"
+```
+
+Media playback failure notification example:
+
+```yaml
+alias: ESP32 smart clock audio failed
+triggers:
+  - trigger: event
+    event_type: esphome.media_playback_failed
+actions:
+  - action: persistent_notification.create
+    data:
+      title: ESP32 smart clock audio failed
+      message: "The stream stopped quickly. Use 16 kHz mono or a smaller stream."
 ```
