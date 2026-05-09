@@ -208,9 +208,9 @@ jobs:
           cp release/firmware-manifest.json update-channel/firmware-manifest.json
           printf '%s\n' "${FIRMWARE_VERSION}" > update-channel/VERSION
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C update-channel init
+          git -C update-channel config user.name "github-actions[bot]"
+          git -C update-channel config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git -C update-channel checkout -B "${UPDATE_BRANCH}"
           git -C update-channel add .
           git -C update-channel commit -m "Publish firmware ${FIRMWARE_VERSION}"
