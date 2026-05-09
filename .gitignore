@@ -2,3 +2,7 @@
 .esphome
 secrets.yaml
 .vscode/
+
+# Keep only final printable 3D models in the repository.
+ESP32_Smart_Clock_3D_Design/*.stl
+!ESP32_Smart_Clock_3D_Design/*final*.stl
