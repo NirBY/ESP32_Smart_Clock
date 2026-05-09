@@ -1,0 +1,151 @@
+title: ESP32 Smart Clock
+views:
+  - title: Clock
+    path: esp32-smart-clock
+    icon: mdi:clock-digital
+    cards:
+      - type: markdown
+        title: ESP32 Smart Clock
+        content: >
+          A focused control surface for the matrix clock. The stock Home
+          Assistant device page is generated automatically, so this dashboard
+          adds the friendly explanations and grouping that the device page cannot
+          show directly.
+
+      - type: grid
+        title: Now
+        columns: 2
+        square: false
+        cards:
+          - type: entity
+            entity: media_player.esp32_smart_clock_speaker
+            name: Speaker
+            icon: mdi:speaker
+            state_color: true
+          - type: entity
+            entity: switch.esp32_smart_clock_alarm_enabled
+            name: Alarm
+            icon: mdi:alarm
+            state_color: true
+          - type: entity
+            entity: sensor.esp32_smart_clock_temperature
+            name: Room temperature
+            icon: mdi:thermometer
+          - type: entity
+            entity: sensor.esp32_smart_clock_humidity
+            name: Humidity
+            icon: mdi:water-percent
+
+      - type: entities
+        title: Display
+        icon: mdi:led-strip-variant
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - type: section
+            label: Matrix output
+          - entity: text.esp32_smart_clock_screen_message
+            name: Screen message
+            icon: mdi:message-text
+          - entity: number.esp32_smart_clock_display_brightness
+            name: Brightness
+            icon: mdi:brightness-6
+          - entity: select.esp32_smart_clock_time_format
+            name: Time format
+            icon: mdi:clock-digital
+          - type: section
+            label: How long automatic screens stay visible
+          - entity: number.esp32_smart_clock_screen_message_seconds
+            name: Manual message seconds
+          - entity: number.esp32_smart_clock_date_message_seconds
+            name: Date message seconds
+          - entity: number.esp32_smart_clock_sensor_message_seconds
+            name: Sensor message seconds
+          - entity: number.esp32_smart_clock_sensor_message_interval_seconds
+            name: Sensor message interval
+
+      - type: markdown
+        content: >
+          **Display notes:** `Screen message` pushes text to the matrix from Home
+          Assistant. `Time format` switches between compact `HH:MM:SS` and the
+          larger long-distance `HH:MM` clock. Sensor/date timings control the
+          automatic temporary screens.
+
+      - type: entities
+        title: Alarm
+        icon: mdi:alarm
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: switch.esp32_smart_clock_alarm_enabled
+            name: Enabled
+          - entity: number.esp32_smart_clock_alarm_hour
+            name: Hour
+          - entity: number.esp32_smart_clock_alarm_minute
+            name: Minute
+          - entity: number.esp32_smart_clock_alarm_message_seconds
+            name: Message seconds
+
+      - type: markdown
+        content: >
+          **Alarm notes:** the alarm shows `ALARM` on the matrix and emits the
+          `esphome.alarm_triggered` event. The message duration controls how long
+          `ALARM` stays on screen before the normal clock returns.
+
+      - type: entities
+        title: Audio
+        icon: mdi:speaker
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: media_player.esp32_smart_clock_speaker
+            name: Speaker
+          - entity: switch.esp32_smart_clock_speaker_connected
+            name: Speaker connected
+          - entity: number.esp32_smart_clock_media_message_seconds
+            name: Media label seconds
+
+      - type: markdown
+        content: >
+          **Audio notes:** the speaker entity handles playback. `Speaker
+          connected` is a manual health hint because the I2S amplifier has no
+          detection pin. If it is off, the system alert rotation can show
+          `NO SPK`.
+
+      - type: entities
+        title: System Alerts
+        icon: mdi:alert-circle-outline
+        show_header_toggle: false
+        state_color: true
+        entities:
+          - entity: switch.esp32_smart_clock_show_system_alerts
+            name: Show alerts on matrix
+          - entity: number.esp32_smart_clock_system_alert_seconds
+            name: Alert seconds
+          - entity: number.esp32_smart_clock_system_alert_interval_seconds
+            name: Alert interval
+          - entity: number.esp32_smart_clock_wi_fi_alert_seconds
+            name: Wi-Fi alert seconds
+          - entity: number.esp32_smart_clock_wi_fi_alert_interval_seconds
+            name: Wi-Fi alert interval
+
+      - type: markdown
+        content: >
+          **System notes:** alerts rotate short matrix messages such as `SYNC`,
+          `NO NET`, `NO WIFI`, `NO SENSOR`, `NO AHT`, `NO BMP`, `NO SPK`, and
+          `LOW PWR`. Turn them off if you want the clock to stay quiet.
+
+      - type: entities
+        title: Sensors
+        icon: mdi:home-thermometer-outline
+        show_header_toggle: false
+        entities:
+          - entity: sensor.esp32_smart_clock_temperature
+            name: AHT20 temperature
+          - entity: sensor.esp32_smart_clock_humidity
+            name: AHT20 humidity
+          - entity: sensor.esp32_smart_clock_bmp280_temperature
+            name: BMP280 temperature
+          - entity: sensor.esp32_smart_clock_pressure
+            name: Pressure
+

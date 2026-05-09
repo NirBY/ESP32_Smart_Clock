@@ -7,6 +7,17 @@ esphome:
   name: ${device_name}
   friendly_name: ${friendly_name}
   build_path: C:/Users/nirbe/.esphome/build/${device_name}
+  devices:
+    - id: display_device
+      name: "ESP32 Smart Clock Display"
+    - id: alarm_device
+      name: "ESP32 Smart Clock Alarm"
+    - id: audio_device
+      name: "ESP32 Smart Clock Audio"
+    - id: system_device
+      name: "ESP32 Smart Clock System"
+    - id: sensor_device
+      name: "ESP32 Smart Clock Sensors"
   includes:
     - src/system_health.h
   on_boot:
@@ -400,6 +411,7 @@ sensor:
     temperature:
       name: "Temperature"
       id: aht_temperature
+      device_id: sensor_device
       on_value:
         then:
           - lambda: |-
@@ -407,6 +419,7 @@ sensor:
     humidity:
       name: "Humidity"
       id: aht_humidity
+      device_id: sensor_device
       on_value:
         then:
           - lambda: |-
@@ -418,6 +431,7 @@ sensor:
     temperature:
       name: "BMP280 Temperature"
       id: bmp_temperature
+      device_id: sensor_device
       oversampling: 2x
       on_value:
         then:
@@ -426,6 +440,7 @@ sensor:
     pressure:
       name: "Pressure"
       id: bmp_pressure
+      device_id: sensor_device
       on_value:
         then:
           - lambda: |-
@@ -436,6 +451,7 @@ text:
   - platform: template
     name: "Screen Message"
     id: screen_message_text
+    device_id: display_device
     icon: "mdi:message-text"
     optimistic: true
     min_length: 0
@@ -624,6 +640,8 @@ number:
   - platform: template
     name: "Display Brightness"
     id: display_brightness
+    device_id: display_device
+    entity_category: config
     icon: "mdi:brightness-6"
     optimistic: true
     restore_value: true
@@ -643,6 +661,8 @@ number:
   - platform: template
     name: "System Alert Seconds"
     id: system_alert_seconds
+    device_id: system_device
+    entity_category: config
     icon: "mdi:timer-alert-outline"
     optimistic: true
     restore_value: true
@@ -657,6 +677,8 @@ number:
   - platform: template
     name: "System Alert Interval Seconds"
     id: system_alert_interval_seconds
+    device_id: system_device
+    entity_category: config
     icon: "mdi:timer-sync-outline"
     optimistic: true
     restore_value: true
@@ -671,6 +693,8 @@ number:
   - platform: template
     name: "Screen Message Seconds"
     id: text_message_seconds
+    device_id: display_device
+    entity_category: config
     icon: "mdi:timer-outline"
     optimistic: true
     restore_value: true
@@ -685,6 +709,8 @@ number:
   - platform: template
     name: "Media Message Seconds"
     id: media_message_seconds
+    device_id: audio_device
+    entity_category: config
     icon: "mdi:timer-music-outline"
     optimistic: true
     restore_value: true
@@ -699,6 +725,8 @@ number:
   - platform: template
     name: "Alarm Message Seconds"
     id: alarm_message_seconds
+    device_id: alarm_device
+    entity_category: config
     icon: "mdi:timer-alert-outline"
     optimistic: true
     restore_value: true
@@ -713,6 +741,8 @@ number:
   - platform: template
     name: "Wi-Fi Alert Seconds"
     id: wifi_alert_seconds
+    device_id: system_device
+    entity_category: config
     icon: "mdi:timer-alert-outline"
     optimistic: true
     restore_value: true
@@ -727,6 +757,8 @@ number:
   - platform: template
     name: "Wi-Fi Alert Interval Seconds"
     id: wifi_alert_interval_seconds
+    device_id: system_device
+    entity_category: config
     icon: "mdi:timer-sync-outline"
     optimistic: true
     restore_value: true
@@ -741,6 +773,8 @@ number:
   - platform: template
     name: "Date Message Seconds"
     id: date_message_seconds
+    device_id: display_device
+    entity_category: config
     icon: "mdi:timer-outline"
     optimistic: true
     restore_value: true
@@ -755,6 +789,8 @@ number:
   - platform: template
     name: "Sensor Message Seconds"
     id: sensor_message_seconds
+    device_id: display_device
+    entity_category: config
     icon: "mdi:timer-outline"
     optimistic: true
     restore_value: true
@@ -769,6 +805,8 @@ number:
   - platform: template
     name: "Sensor Message Interval Seconds"
     id: sensor_message_interval_seconds
+    device_id: display_device
+    entity_category: config
     icon: "mdi:timer-sync-outline"
     optimistic: true
     restore_value: true
@@ -783,6 +821,8 @@ number:
   - platform: template
     name: "Alarm Hour"
     id: alarm_hour
+    device_id: alarm_device
+    entity_category: config
     icon: "mdi:clock-time-four-outline"
     optimistic: true
     restore_value: true
@@ -797,6 +837,8 @@ number:
   - platform: template
     name: "Alarm Minute"
     id: alarm_minute
+    device_id: alarm_device
+    entity_category: config
     icon: "mdi:clock-time-four-outline"
     optimistic: true
     restore_value: true
@@ -812,6 +854,8 @@ select:
   - platform: template
     name: "Time Format"
     id: time_format
+    device_id: display_device
+    entity_category: config
     icon: "mdi:clock-digital"
     optimistic: true
     restore_value: true
@@ -828,6 +872,8 @@ switch:
   - platform: template
     name: "Show System Alerts"
     id: show_system_alerts
+    device_id: system_device
+    entity_category: config
     icon: "mdi:alert-circle-outline"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
@@ -844,6 +890,8 @@ switch:
   - platform: template
     name: "Speaker Connected"
     id: speaker_connected
+    device_id: audio_device
+    entity_category: config
     icon: "mdi:speaker"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_ON
@@ -857,6 +905,7 @@ switch:
   - platform: template
     name: "Alarm Enabled"
     id: alarm_enabled
+    device_id: alarm_device
     icon: "mdi:alarm"
     optimistic: true
     restore_mode: RESTORE_DEFAULT_OFF
@@ -1561,6 +1610,7 @@ media_player:
   - platform: speaker
     name: "Speaker"
     id: clock_speaker
+    device_id: audio_device
     files:
       # Tiny local WAV used for volume feedback. It plays as an announcement so
       # the user hears the current volume immediately after changing it.

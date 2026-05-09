@@ -6,6 +6,7 @@ This wiki contains the detailed project documentation. Keep `README.md` short an
 
 - [Hardware And Power](Hardware-And-Power.md)
 - [Install And Home Assistant](Install-And-Home-Assistant.md)
+- [Home Assistant Dashboard](Home-Assistant-Dashboard.md)
 - [Display Behavior](Display-Behavior.md)
 - [Audio And Music](Audio-And-Music.md)
 - [Logs And Troubleshooting](Logs-And-Troubleshooting.md)

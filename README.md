@@ -61,6 +61,7 @@ Detailed documentation was moved out of the README:
 - [Wiki Home](docs/wiki/Home.md)
 - [Hardware And Power](docs/wiki/Hardware-And-Power.md)
 - [Install And Home Assistant](docs/wiki/Install-And-Home-Assistant.md)
+- [Home Assistant Dashboard](docs/wiki/Home-Assistant-Dashboard.md)
 - [Display Behavior](docs/wiki/Display-Behavior.md)
 - [Audio And Music](docs/wiki/Audio-And-Music.md)
 - [Logs And Troubleshooting](docs/wiki/Logs-And-Troubleshooting.md)
