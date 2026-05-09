@@ -4,7 +4,7 @@ The display follows a fixed 7-rule spec. Anything not covered by these rules fal
 
 ## Clock Display Logic
 
-1. **Default:** show the clock. Time is synced from NTP/SNTP and the time source is refreshed every `1h`. Before NTP is valid, the display shows `--:--`.
+1. **Default:** show the clock. Time is synced from Home Assistant as soon as the native API connects, with SNTP kept as an internet fallback refreshed every `1h`. When Wi-Fi connects, the firmware immediately restarts SNTP and retries every `15 seconds` until time becomes valid. Before time is valid, the display shows `SYNC`, `NO WIFI`, or `NO NET` instead of staying on `--:--`, unless `Show System Alerts` is disabled. The `Time Format` selector chooses either `HH:MM:SS` or the larger long-distance `HH:MM` view with a blinking colon.
 2. **Screen message from Home Assistant:** show the message for `10 seconds` by default, then return to the clock. The duration is configurable with `Screen Message Seconds`. Sent via the `esphome.esp32_smart_clock_show_message` action or by writing the `Screen Message` text entity.
 3. **Indoor sensors:** every `30 seconds` by default, show temperature and humidity for `3 seconds` by default. Both values are configurable from Home Assistant. The matrix uses a fixed non-scrolling layout like `24°C 57%`; if data is missing, it shows `00°C 00%`. Barometric pressure is still exposed to Home Assistant, but it is not shown on the LED matrix.
 4. **Music / TTS:** while the speaker is active, show a label (`MUSIC` for media playback, `SPEAKER` for TTS/announcements). The label clears immediately on pause / idle / turn-off, and is hard-capped at `10 seconds` by default if no clear event arrives. The cap is configurable with `Media Message Seconds`.
@@ -18,10 +18,11 @@ Multiple events can be active at the same time. The display lambda checks branch
 
 1. `text_message` - Home Assistant message (`Screen Message Seconds`)
 2. `media_message` - `MUSIC` / `SPEAKER` (`Media Message Seconds`)
-3. `wifi_alert` - `NO WIFI` (`Wi-Fi Alert Seconds`)
-4. `date_message` - `Day DD/MM` (`Date Message Seconds`)
-5. `sensor_message` - `temp humidity` (`Sensor Message Seconds`)
-6. Default clock - `HH:MM:SS`
+3. `system_alert_message` - rotating startup/health alerts (`System Alert Seconds`)
+4. `wifi_alert` - legacy `NO WIFI` alert (`Wi-Fi Alert Seconds`)
+5. `date_message` - `Day DD/MM` (`Date Message Seconds`)
+6. `sensor_message` - `temp humidity` (`Sensor Message Seconds`)
+7. Default clock - selected `Time Format` (`HH:MM:SS` or larger `HH:MM`)
 
 This is why a Home Assistant message hides a sensor screen, but a sensor screen never hides a message.
 
@@ -33,10 +34,12 @@ This is why a Home Assistant message hides a sensor screen, but a sensor screen 
 | Music playback starts | `MUSIC` | `Media Message Seconds` (default 10 s), cleared on pause/idle/off | `media_player.on_play` sets `media_message_until` |
 | TTS / announcement starts | `SPEAKER` | `Media Message Seconds` (default 10 s), cleared on pause/idle/off | `media_player.on_announcement` sets `media_message_until` |
 | Music pauses, idles, or turns off | returns to clock | immediately | `on_pause` / `on_idle` / `on_turn_off` clear `media_message_until` |
-| Wi-Fi disconnected | `NO WIFI` | `Wi-Fi Alert Seconds` every `Wi-Fi Alert Interval Seconds` | dynamic `interval: 1s` check + `not: wifi.connected` sets `wifi_alert_until` |
+| Startup time sync | `SYNC`, then `NO NET` if retries continue | `System Alert Seconds` every `System Alert Interval Seconds` | Wi-Fi `on_connect` and a 15-second retry loop restart SNTP until time is valid |
+| Wi-Fi disconnected | `NO WIFI` | `System Alert Seconds` / `Wi-Fi Alert Seconds` | system alert rotation and the legacy Wi-Fi alert both require `Show System Alerts` |
 | Top of each hour | `Day DD/MM` | `Date Message Seconds` (default 3 s) | `time.on_time` with `seconds: 0, minutes: 0` sets `date_message_until` |
 | Indoor sensors | fixed `temp humidity`, for example `24°C 57%`; missing data shows `00°C 00%` | `Sensor Message Seconds` every `Sensor Message Interval Seconds` | dynamic `interval: 1s` check sets `sensor_message_until`; the display uses a fixed non-scrolling pixel layout |
 | Alarm time reached | `ALARM` | `Alarm Message Seconds` (default 10 s) | `alarm_triggered` script sets `text_message_until` |
+| System health alert | `NO SENSOR`, `NO AHT`, `NO BMP`, `NO SPK`, `LOW PWR`, `NO NET`, or `NO WIFI` | `System Alert Seconds` every `System Alert Interval Seconds` | dynamic alert rotation, enabled by the `Show System Alerts` switch. Sensor alerts use stale-update detection: if AHT20 or BMP280 stops publishing for about `75 seconds`, the matching alert is shown and a warning is logged. |
 | Invalid / missing data on any branch | clock | immediately | each branch only renders after its own validity check; otherwise control falls through to the clock |
 
 ## Rendering And Hardware Notes
@@ -49,7 +52,11 @@ Display brightness can be changed from Home Assistant with the `Display Brightne
 
 Brightness changes are sent directly to the MAX7219 chips at runtime and are also re-applied after boot when the restored Home Assistant value is available.
 
-Temporary display timings can also be changed from Home Assistant. The ESPHome firmware exposes number entities for `Screen Message Seconds`, `Media Message Seconds`, `Alarm Message Seconds`, `Wi-Fi Alert Seconds`, `Wi-Fi Alert Interval Seconds`, `Date Message Seconds`, `Sensor Message Seconds`, and `Sensor Message Interval Seconds`. These values are restored after reboot.
+Temporary display timings can also be changed from Home Assistant. The ESPHome firmware exposes number entities for `System Alert Seconds`, `System Alert Interval Seconds`, `Screen Message Seconds`, `Media Message Seconds`, `Alarm Message Seconds`, `Wi-Fi Alert Seconds`, `Wi-Fi Alert Interval Seconds`, `Date Message Seconds`, `Sensor Message Seconds`, and `Sensor Message Interval Seconds`. These values are restored after reboot.
+
+The `Time Format` selector is restored after reboot. `HH:MM:SS` keeps the compact seconds display, while `HH:MM` removes seconds so the hour and minute digits can be drawn wider for better readability from far away. In the `HH:MM` format, the colon blinks once per second.
+
+`Show System Alerts` is the Home Assistant checkbox that enables or skips matrix health warnings. `Speaker Connected` is a manual checkbox because the I2S amplifier/speaker wiring has no detection pin; turn it off to rotate a `NO SPK` alert.
 
 ## Song Name Limitation
 
