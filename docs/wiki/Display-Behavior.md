@@ -73,6 +73,14 @@ data:
 
 That will show for `Screen Message Seconds` and then return to the clock, like any other screen message.
 
+## Basic Emoji
+
+English screen messages support a small set of monochrome 5x7 emoji-style icons. These are hand-drawn for the 8x32 LED matrix, not full color emoji fonts:
+
+`❤️`, `💛`, `😀`, `🙂`, `🙁`, `😢`, `⭐`, `✅`, `✓`, `❌`, `✕`, `⚠️`, `🔔`, `♪`, `🎵`, `☀️`, `🌙`, `🔥`, `👍`, `📅`, `📆`
+
+Unsupported emoji fall back to the ESPHome font renderer and may log `Codepoint ... not found in font`. Add only icons that need to be readable on the matrix; full emoji fonts are too large and most emoji do not survive well at 5x7 pixels.
+
 ## Reset Behavior
 
 The display returns to the clock immediately when any of these happens:

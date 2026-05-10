@@ -1,7 +1,7 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
-  firmware_version: "0.1.0-beta.12"
+  firmware_version: "0.1.0-beta.13"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -507,6 +507,17 @@ update:
     source: ${github_release_manifest_url}
     update_interval: 6h
     disabled_by_default: true
+
+text_sensor:
+  - platform: template
+    name: "Supported Emojis"
+    id: supported_emojis
+    device_id: display_device
+    entity_category: diagnostic
+    icon: "mdi:emoticon-outline"
+    lambda: |-
+      return {"❤️ 💛 😀 🙂 🙁 😢 ⭐ ✅ ✓ ❌ ✕ ⚠️ 🔔 ♪ 🎵 ☀️ 🌙 🔥 👍 📅 📆"};
+    update_interval: never
 
 text:
   - platform: template
@@ -1211,6 +1222,53 @@ display:
           default: return 0;
         }
       };
+      auto pixel_codepoint_glyph = [&](uint32_t cp, uint8_t rows[7]) -> int {
+        if (cp < 0x80) {
+          return pixel_glyph((char) cp, rows);
+        }
+        for (int i = 0; i < 7; i++) {
+          rows[i] = 0;
+        }
+        switch (cp) {
+          case 0x2764:  // heart, rendered monochrome on the LED matrix
+          case 0x1F49B: // yellow heart
+            rows[0]=0b01010; rows[1]=0b11111; rows[2]=0b11111; rows[3]=0b11111; rows[4]=0b01110; rows[5]=0b00100; rows[6]=0b00000; return 5;
+          case 0x1F600: // grinning face
+          case 0x1F642: // slightly smiling face
+            rows[0]=0b01110; rows[1]=0b10001; rows[2]=0b10101; rows[3]=0b10001; rows[4]=0b10101; rows[5]=0b10001; rows[6]=0b01110; return 5;
+          case 0x1F641: // slightly frowning face
+          case 0x1F622: // crying face, simplified to sad face
+            rows[0]=0b01110; rows[1]=0b10001; rows[2]=0b10101; rows[3]=0b10001; rows[4]=0b10001; rows[5]=0b10101; rows[6]=0b01010; return 5;
+          case 0x2B50: // star
+            rows[0]=0b00100; rows[1]=0b10101; rows[2]=0b01110; rows[3]=0b11111; rows[4]=0b01110; rows[5]=0b10101; rows[6]=0b00100; return 5;
+          case 0x2705: // check mark button
+          case 0x2713: // check mark
+            rows[0]=0b00000; rows[1]=0b00001; rows[2]=0b00010; rows[3]=0b10100; rows[4]=0b01000; rows[5]=0b00000; rows[6]=0b00000; return 5;
+          case 0x274C: // cross mark
+          case 0x2715: // multiplication x
+            rows[0]=0b10001; rows[1]=0b01010; rows[2]=0b00100; rows[3]=0b00100; rows[4]=0b01010; rows[5]=0b10001; rows[6]=0b00000; return 5;
+          case 0x26A0: // warning
+            rows[0]=0b00100; rows[1]=0b01010; rows[2]=0b10001; rows[3]=0b10101; rows[4]=0b10001; rows[5]=0b11111; rows[6]=0b00000; return 5;
+          case 0x1F514: // bell
+            rows[0]=0b00100; rows[1]=0b01110; rows[2]=0b01110; rows[3]=0b01110; rows[4]=0b11111; rows[5]=0b00100; rows[6]=0b00000; return 5;
+          case 0x266A: // eighth note
+          case 0x1F3B5: // musical note
+            rows[0]=0b00111; rows[1]=0b00101; rows[2]=0b00101; rows[3]=0b00100; rows[4]=0b11100; rows[5]=0b11100; rows[6]=0b00000; return 5;
+          case 0x2600: // sun
+            rows[0]=0b10101; rows[1]=0b01110; rows[2]=0b11111; rows[3]=0b11111; rows[4]=0b11111; rows[5]=0b01110; rows[6]=0b10101; return 5;
+          case 0x1F319: // crescent moon
+            rows[0]=0b00110; rows[1]=0b01100; rows[2]=0b11000; rows[3]=0b11000; rows[4]=0b11000; rows[5]=0b01100; rows[6]=0b00110; return 5;
+          case 0x1F525: // fire
+            rows[0]=0b00100; rows[1]=0b00110; rows[2]=0b01101; rows[3]=0b11101; rows[4]=0b11111; rows[5]=0b01110; rows[6]=0b00100; return 5;
+          case 0x1F44D: // thumbs up
+            rows[0]=0b00100; rows[1]=0b00110; rows[2]=0b11110; rows[3]=0b11111; rows[4]=0b11110; rows[5]=0b11110; rows[6]=0b00000; return 5;
+          case 0x1F4C5: // calendar
+          case 0x1F4C6: // tear-off calendar
+            rows[0]=0b11111; rows[1]=0b10101; rows[2]=0b11111; rows[3]=0b10001; rows[4]=0b10111; rows[5]=0b10001; rows[6]=0b11111; return 5;
+          default:
+            return 0;
+        }
+      };
       auto draw_pixel_text = [&](const std::string &text, bool text_has_hebrew) -> bool {
         if (text.empty() || text_has_hebrew) {
           return false;
@@ -1222,24 +1280,44 @@ display:
           size_t start;
           size_t len;
           int width;
-          char ascii;
+          uint32_t codepoint;
         };
         PixelGlyph glyphs[100];
         size_t glyph_count = 0;
         int text_width = 0;
         for (size_t i = 0; i < text.size();) {
           uint8_t rows[7];
-          char ascii = 0;
+          uint32_t codepoint = 0;
           size_t len = 1;
           int width = 0;
 
           const uint8_t b0 = text[i];
           if (b0 < 0x80) {
-            ascii = (char) b0;
-            width = pixel_glyph(ascii, rows);
+            codepoint = b0;
+          } else if ((b0 & 0xE0) == 0xC0) {
+            len = 2;
+          } else if ((b0 & 0xF0) == 0xE0) {
+            len = 3;
+          } else if ((b0 & 0xF8) == 0xF0) {
+            len = 4;
           } else {
             return false;
           }
+          if (i + len > text.size()) {
+            return false;
+          }
+          if (len == 2) {
+            codepoint = ((text[i] & 0x1F) << 6) | (text[i + 1] & 0x3F);
+          } else if (len == 3) {
+            codepoint = ((text[i] & 0x0F) << 12) | ((text[i + 1] & 0x3F) << 6) | (text[i + 2] & 0x3F);
+          } else if (len == 4) {
+            codepoint = ((text[i] & 0x07) << 18) | ((text[i + 1] & 0x3F) << 12) | ((text[i + 2] & 0x3F) << 6) | (text[i + 3] & 0x3F);
+          }
+          if (codepoint == 0xFE0E || codepoint == 0xFE0F) {
+            i += len;
+            continue;
+          }
+          width = pixel_codepoint_glyph(codepoint, rows);
 
           if (width == 0) {
             return false;
@@ -1247,7 +1325,7 @@ display:
           if (glyph_count >= 100) {
             return false;
           }
-          glyphs[glyph_count++] = {i, len, width, ascii};
+          glyphs[glyph_count++] = {i, len, width, codepoint};
           text_width += width;
           i += len;
         }
@@ -1261,7 +1339,7 @@ display:
         };
         auto draw_glyph = [&](int x, const PixelGlyph &glyph) {
           uint8_t rows[7];
-          const int width = pixel_glyph(glyph.ascii, rows);
+          const int width = pixel_codepoint_glyph(glyph.codepoint, rows);
           for (int y = 0; y < 7; y++) {
             for (int col = 0; col < width; col++) {
               const int px = x + col;
