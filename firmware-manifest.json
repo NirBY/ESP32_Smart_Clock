@@ -1,0 +1,15 @@
+{
+  "name": "ESP32 Smart Clock",
+  "version": "0.1.0-beta.13",
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "ota": {
+        "md5": "f18e15bb5c34a4954568b978a86e0d30",
+        "path": "https://raw.githubusercontent.com/NirBY/ESP32_Smart_Clock/firmware-latest/esphome-smart-clock.ota.bin",
+        "release_url": "https://github.com/NirBY/ESP32_Smart_Clock/releases/tag/v0.1.0-beta.13",
+        "summary": "ESP32 Smart Clock 0.1.0-beta.13"
+      }
+    }
+  ]
+}
