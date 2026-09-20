@@ -27,6 +27,12 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade platformio esphome
 
+      - name: Install isolated Arduino build tools
+        run: |
+          python -m venv "$RUNNER_TEMP/platformio"
+          "$RUNNER_TEMP/platformio/bin/python" -m pip install "platformio==6.2.0"
+          echo "ARDUINO_PIO=$RUNNER_TEMP/platformio/bin/pio" >> "$GITHUB_ENV"
+
       - name: Prepare ESPHome CI secrets
         run: cp secrets.example.yaml secrets.yaml
 
@@ -51,10 +57,12 @@ jobs:
         run: esphome compile esphome-smart-clock.yaml
 
       - name: Build PlatformIO hardware test firmware
-        run: pio run -e esp32dev
+        run: |
+          "$ARDUINO_PIO" run -e esp32dev
 
       - name: Build PlatformIO Bluetooth speaker firmware
-        run: pio run -e bluetooth_speaker
+        run: |
+          "$ARDUINO_PIO" run -e bluetooth_speaker
 
       - name: Write package update verification report
         run: |
@@ -65,7 +73,8 @@ jobs:
             echo "- Verified at: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
             echo "- Commit: ${GITHUB_SHA}"
             echo "- ESPHome: $(esphome version)"
-            echo "- PlatformIO: $(pio --version)"
+            echo "- PlatformIO (ESPHome): $(pio --version)"
+            echo "- PlatformIO (Arduino): $("$ARDUINO_PIO" --version)"
             echo
             echo "Builds completed successfully with the latest packages available to pip and PlatformIO:"
             echo

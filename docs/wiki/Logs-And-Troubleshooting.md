@@ -46,7 +46,7 @@ Important rule: a module cannot be more detailed than the global level. For exam
 Connect the ESP32 by USB and run:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 esphome logs esphome-smart-clock.yaml
 ```
 
@@ -73,7 +73,7 @@ Use this when you need boot logs from the first seconds after flashing.
 After the device is already online:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 esphome logs esphome-smart-clock.yaml --device OTA
 ```
 

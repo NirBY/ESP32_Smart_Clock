@@ -41,7 +41,7 @@ If this is your first install, start with **ESPHome smart clock**.
 Compile ESPHome:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 esphome compile esphome-smart-clock.yaml
 ```
 
@@ -66,11 +66,13 @@ esphome logs esphome-smart-clock.yaml --device COM5
 Build PlatformIO hardware test:
 
 ```powershell
-pio run -e esp32dev
+.pio/core/Scripts/pio.exe run -e esp32dev
 ```
 
 Build Bluetooth speaker firmware:
 
 ```powershell
-pio run -e bluetooth_speaker
+.pio/core/Scripts/pio.exe run -e bluetooth_speaker
 ```
+
+For the isolated PlatformIO environment setup, see [the README](../../README.md#common-commands).

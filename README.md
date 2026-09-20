@@ -6,20 +6,61 @@ For normal use, install the **ESPHome smart clock firmware** from `esphome-smart
 
 ## Quick Start
 
-1. Copy `secrets.example.yaml` to `secrets.yaml`.
-2. Put your Wi-Fi and ESPHome API key in `secrets.yaml`.
-3. Connect the ESP32 with a USB data cable.
-4. Compile and upload:
+1. Install the tested ESPHome version: `python -m pip install "esphome==2026.9.0"`.
+2. Copy `secrets.example.yaml` to `secrets.yaml`.
+3. Put your Wi-Fi and ESPHome API key in `secrets.yaml`.
+4. Connect the ESP32 with a USB data cable.
+5. Compile and upload:
 
    ```powershell
-   cd Z:\workspace\esp32_smart_clock
+   cd C:\workspace\esp32_smart_clock
    esphome compile esphome-smart-clock.yaml
    esphome upload esphome-smart-clock.yaml
    ```
 
-5. Add the discovered ESPHome device in Home Assistant.
+6. Add the discovered ESPHome device in Home Assistant.
 
 If upload fails, hold **BOOT** while upload starts, then release **BOOT** when writing begins.
+
+## Recover Wi-Fi from your phone
+
+The clock already includes **ESP32 Smart Clock Fallback**, a password-protected
+Wi-Fi hotspot and setup page. No Bluetooth, app, Home Assistant connection, or
+USB cable is needed to change the router name/password.
+
+1. Power the clock normally. If its configured Wi-Fi network cannot be reached
+   (for example, after changing the router password), wait **90 seconds**.
+   The fallback hotspot starts automatically; there is no button to press.
+2. On your phone, open **Settings > Wi-Fi** and join
+   **ESP32 Smart Clock Fallback**.
+3. Enter the hotspot password: the value of `fallback_ap_password` in your
+   private `secrets.yaml`. This is separate from your home Wi-Fi password.
+   Public release builds use the example value `CHANGE_ME_FALLBACK_AP_PASSWORD`.
+4. Accept **Stay connected / Use without Internet** if prompted. If the setup
+   page does not open automatically, open **http://192.168.4.1/** in your browser
+   (HTTP, not HTTPS). Temporarily turn off mobile data or a VPN if your phone
+   keeps routing away from the clock.
+5. Select your home **2.4 GHz** Wi-Fi network, or enter its name manually, enter
+   its password, and press **Save**. The ESP32 board used here cannot join 5 GHz.
+6. Allow the clock to connect, then reconnect your phone to your normal network.
+   The fallback hotspot shuts down after connection. If the password is wrong,
+   reconnect to the fallback hotspot and try again.
+
+![ESPHome fallback Wi-Fi setup page](docs/images/wifi-fallback-portal.png)
+
+*Screenshot of the original ESPHome 2026.9.0 portal rendered locally with
+example network data. Your available networks will differ.*
+
+The portal saves the new credentials on the clock across restarts. Also update
+`wifi_ssid` and `wifi_password` in your local `secrets.yaml` before the next USB
+build/upload, so a future firmware installation does not restore stale values.
+Changing Wi-Fi here does not change the Home Assistant API encryption key.
+
+To test recovery without changing your router, temporarily flash a local build
+with a nonexistent Wi-Fi SSID, wait 90 seconds, then follow the steps above.
+Keep a copy of your correct local settings. Do not reset or erase the device.
+
+Reference: [ESPHome captive portal documentation](https://esphome.io/components/captive_portal/).
 
 ## Firmware Updates
 
@@ -27,7 +68,7 @@ For a personalized clock, update from your local ESPHome YAML. This preserves
 your private `secrets.yaml` and any local config edits:
 
 ```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+esphome run esphome-smart-clock.yaml --device 192.168.1.99
 ```
 
 Replace `192.168.1.99` with the clock IP address.
@@ -53,6 +94,25 @@ speaker. The automation can run every day at a selected time, from an
 
 Create an `input_button` helper if you want a dashboard button, then import the
 blueprint and select your calendar, clock speaker, and ESPHome display action.
+
+## Tested software versions
+
+| Component | Version |
+|---|---|
+| Clock firmware | 0.1.0-beta.14 |
+| ESPHome | 2026.9.0 (see `ESPHOME_VERSION`) |
+| PlatformIO Core (ESPHome dependency) | 6.1.19 |
+| PlatformIO Core (separate Arduino builds) | 6.2.0 |
+| Arduino PlatformIO platform | pioarduino 55.03.312 |
+| Arduino-ESP32 / ESP-IDF | 3.3.12 / 5.5.5 |
+| ESP32-A2DP | 1.8.11 |
+| Adafruit AHTX0 / BMP280 / GFX | 2.0.6 / 3.0.0 / 1.12.6 |
+| MD_MAX72XX | 3.5.1 |
+
+The ESPHome firmware uses its own supported ESP-IDF toolchain. The Arduino
+platform above is used for the separate hardware-test and Bluetooth builds.
+Release CI installs the exact version in `ESPHOME_VERSION` and builds with
+`secrets.example.yaml`; private local firmware binaries must not be published.
 
 ## Firmware Options
 
@@ -115,7 +175,7 @@ Upload and keep logs open:
 esphome run esphome-smart-clock.yaml --device COM5
 ```
 
-Upload over Wi-Fi by IP address:
+Upload an already compiled firmware over Wi-Fi by IP address:
 
 ```powershell
 esphome upload esphome-smart-clock.yaml --device 192.168.1.99
@@ -127,16 +187,24 @@ Upload over Wi-Fi by IP address and keep logs open:
 esphome run esphome-smart-clock.yaml --device 192.168.1.99
 ```
 
+For the separate Arduino builds, install PlatformIO 6.2.0 in its own environment
+(ESPHome requires PlatformIO 6.1.19 in its environment):
+
+```powershell
+python -m venv .pio/core
+.pio/core/Scripts/python.exe -m pip install "platformio==6.2.0"
+```
+
 Build the PlatformIO hardware test:
 
 ```powershell
-pio run -e esp32dev
+.pio/core/Scripts/pio.exe run -e esp32dev
 ```
 
 Build the Bluetooth speaker firmware:
 
 ```powershell
-pio run -e bluetooth_speaker
+.pio/core/Scripts/pio.exe run -e bluetooth_speaker
 ```
 
 ## Notes

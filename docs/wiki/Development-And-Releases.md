@@ -41,7 +41,7 @@ python -m esphome version
 2. Open:
 
    ```text
-   Z:\workspace\esp32_smart_clock
+   C:\workspace\esp32_smart_clock
    ```
 
 3. Wait for PlatformIO to load the project.
@@ -56,7 +56,7 @@ This is the recommended first install.
 2. In the VS Code terminal, run:
 
    ```powershell
-   cd Z:\workspace\esp32_smart_clock
+   cd C:\workspace\esp32_smart_clock
    esphome compile esphome-smart-clock.yaml
    esphome upload esphome-smart-clock.yaml
    ```
@@ -68,7 +68,7 @@ This is the recommended first install.
 After the first USB install, future ESPHome uploads can usually happen over Wi-Fi:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 esphome upload esphome-smart-clock.yaml
 ```
 
@@ -93,7 +93,7 @@ Wi-Fi and the ESPHome API working.
 This is only for checking the hardware wiring. It replaces the ESPHome firmware until you flash ESPHome again.
 
 1. Install VS Code or Cursor.
-2. Install the PlatformIO extension.
+2. Install the PlatformIO extension and ensure its Core version is at least 6.2.0.
 3. Open this folder.
 4. Connect the ESP32 with a USB data cable.
 5. Click PlatformIO: Build.
@@ -104,9 +104,12 @@ This is only for checking the hardware wiring. It replaces the ESPHome firmware 
 Equivalent terminal commands:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
-pio run -e esp32dev
-pio run -e esp32dev -t upload
+cd C:\workspace\esp32_smart_clock
+# One-time setup; keep Arduino build tools separate from ESPHome.
+python -m venv .pio/core
+.pio/core/Scripts/python.exe -m pip install "platformio==6.2.0"
+.pio/core/Scripts/pio.exe run -e esp32dev
+.pio/core/Scripts/pio.exe run -e esp32dev -t upload
 pio device monitor -b 115200
 ```
 
@@ -170,7 +173,7 @@ Best use of simulation:
 3. Build the ESPHome firmware locally with:
 
    ```powershell
-   cd Z:\workspace\esp32_smart_clock
+   cd C:\workspace\esp32_smart_clock
    esphome compile esphome-smart-clock.yaml
    ```
 

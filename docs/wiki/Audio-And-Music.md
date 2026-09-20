@@ -112,9 +112,12 @@ This is an alternate firmware. It replaces ESPHome, so Home Assistant, Wi-Fi sen
 Equivalent terminal commands:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
-pio run -e bluetooth_speaker
-pio run -e bluetooth_speaker -t upload
+cd C:\workspace\esp32_smart_clock
+# One-time setup; keep Arduino build tools separate from ESPHome.
+python -m venv .pio/core
+.pio/core/Scripts/python.exe -m pip install "platformio==6.2.0"
+.pio/core/Scripts/pio.exe run -e bluetooth_speaker
+.pio/core/Scripts/pio.exe run -e bluetooth_speaker -t upload
 ```
 
 To go back to Home Assistant mode, flash `esphome-smart-clock.yaml` again from ESPHome.

@@ -96,6 +96,13 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --upgrade platformio "esphome==${{ steps.version.outputs.target }}"
 
+      - name: Install isolated Arduino build tools
+        if: steps.version.outputs.upgrade_needed == 'true'
+        run: |
+          python -m venv "$RUNNER_TEMP/platformio"
+          "$RUNNER_TEMP/platformio/bin/python" -m pip install "platformio==6.2.0"
+          echo "ARDUINO_PIO=$RUNNER_TEMP/platformio/bin/pio" >> "$GITHUB_ENV"
+
       - name: Prepare ESPHome CI secrets
         if: steps.version.outputs.upgrade_needed == 'true'
         run: cp secrets.example.yaml secrets.yaml
@@ -125,11 +132,13 @@ jobs:
 
       - name: Build PlatformIO hardware test firmware
         if: steps.version.outputs.upgrade_needed == 'true'
-        run: pio run -e esp32dev
+        run: |
+          "$ARDUINO_PIO" run -e esp32dev
 
       - name: Build PlatformIO Bluetooth speaker firmware
         if: steps.version.outputs.upgrade_needed == 'true'
-        run: pio run -e bluetooth_speaker
+        run: |
+          "$ARDUINO_PIO" run -e bluetooth_speaker
 
       - name: Restore repository ESPHome build path
         if: steps.version.outputs.upgrade_needed == 'true'
@@ -165,6 +174,7 @@ jobs:
             python --version
             python -m pip --version
             platformio --version
+            "$ARDUINO_PIO" --version
             esphome version
             echo '```'
             echo
@@ -190,8 +200,8 @@ jobs:
             Checks completed:
             - `esphome config esphome-smart-clock.yaml`
             - `esphome compile esphome-smart-clock.yaml`
-            - `pio run -e esp32dev`
-            - `pio run -e bluetooth_speaker`
+            - `pio run -e esp32dev` (isolated PlatformIO 6.2.0)
+            - `pio run -e bluetooth_speaker` (isolated PlatformIO 6.2.0)
 
             Review `.github/reports/esphome-upgrade.md` before merging and releasing.
           add-paths: |

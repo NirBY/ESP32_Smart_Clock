@@ -29,7 +29,7 @@ python -m esphome version
 Create your private `secrets.yaml` from the dummy example, then edit it:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 Copy-Item secrets.example.yaml secrets.yaml
 ```
 
@@ -57,7 +57,7 @@ Do not commit `secrets.yaml`. It is ignored by git. Only `secrets.example.yaml` 
 Run:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 esphome compile esphome-smart-clock.yaml
 esphome upload esphome-smart-clock.yaml
 ```
@@ -82,7 +82,7 @@ After the first USB flash, ESPHome OTA updates usually work over Wi-Fi.
 From PowerShell:
 
 ```powershell
-cd Z:\workspace\esp32_smart_clock
+cd C:\workspace\esp32_smart_clock
 esphome upload esphome-smart-clock.yaml
 ```
 
