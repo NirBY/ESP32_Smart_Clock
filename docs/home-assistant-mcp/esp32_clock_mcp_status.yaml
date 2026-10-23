@@ -1,0 +1,48 @@
+alias: ESP32 Clock MCP Status
+description: Read clock temperature, humidity, pressure, countdown, alarm, display settings, speaker and firmware
+  state. No changes. Unknown/unavailable values are not measurements.
+mode: queued
+max: 10
+fields: {}
+sequence:
+- variables:
+    clock_entities:
+    - number.esp32_smart_clock_timer_timer_display_seconds
+    - number.esp32_smart_clock_timer_clock_display_seconds
+    - number.esp32_smart_clock_timer_timer_minutes
+    - number.esp32_smart_clock_display_brightness
+    - number.esp32_smart_clock_system_alert_seconds
+    - number.esp32_smart_clock_system_alert_interval_seconds
+    - number.esp32_smart_clock_screen_message_seconds
+    - number.esp32_smart_clock_media_message_seconds
+    - number.esp32_smart_clock_audio_hourly_beep_quiet_start_hour
+    - number.esp32_smart_clock_audio_hourly_beep_quiet_end_hour
+    - number.esp32_smart_clock_alarm_message_seconds
+    - number.esp32_smart_clock_wi_fi_alert_seconds
+    - number.esp32_smart_clock_wi_fi_alert_interval_seconds
+    - number.esp32_smart_clock_date_message_seconds
+    - number.esp32_smart_clock_sensor_message_seconds
+    - number.esp32_smart_clock_sensor_message_interval_seconds
+    - number.esp32_smart_clock_alarm_hour
+    - number.esp32_smart_clock_alarm_minute
+    - switch.esp32_smart_clock_show_system_alerts
+    - switch.esp32_smart_clock_speaker_connected
+    - switch.esp32_smart_clock_audio_hourly_beep_enabled
+    - switch.esp32_smart_clock_audio_hourly_beep_quiet_hours_enabled
+    - switch.esp32_smart_clock_alarm_enabled
+    - sensor.esp32_smart_clock_temperature
+    - sensor.esp32_smart_clock_humidity
+    - sensor.esp32_smart_clock_pressure
+    - sensor.esp32_smart_clock_bmp280_temperature
+    - sensor.esp32_smart_clock_timer_timer_remaining
+    - sensor.esp32_smart_clock_timer_timer_state
+    - select.esp32_smart_clock_time_format
+    - text.esp32_smart_clock_screen_message
+    - media_player.esp32_smart_clock_speaker
+    - media_player.esp32_smart_clock_audio_speaker
+    - update.esp32_smart_clock_system_firmware_update
+- variables:
+    result: '{% set ns=namespace(items=[]) %}{% for e in clock_entities %}{% set ns.items=ns.items+[dict(entity_id=e,state=states(e),unit=state_attr(e,''unit_of_measurement''),volume=state_attr(e,''volume_level''),muted=state_attr(e,''is_volume_muted''),installed_version=state_attr(e,''installed_version''),latest_version=state_attr(e,''latest_version''))]
+      %}{% endfor %}{{ dict(entities=ns.items) }}'
+- stop: Clock state snapshot
+  response_variable: result

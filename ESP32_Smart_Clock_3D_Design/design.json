@@ -1,0 +1,107 @@
+{
+  "L": 158,
+  "W": 60,
+  "D": 49.7,
+  "lid_t": 1.5,
+  "wall": 2.25,
+  "front_skin": 0.6,
+  "floor_t": 1.956,
+  "display_origin": [
+    12.95,
+    13.95,
+    0.6
+  ],
+  "esp_origin": [
+    1.8,
+    15.9,
+    42.2
+  ],
+  "esp_holes": [
+    [
+      4.25,
+      18.35
+    ],
+    [
+      50.95,
+      18.35
+    ],
+    [
+      4.25,
+      41.65
+    ],
+    [
+      50.95,
+      41.65
+    ]
+  ],
+  "esp_D_flat_mm": 1,
+  "esp_D_relief_depth_mm": 2.3,
+  "esp_USB_insert_recess_mm": 2.5,
+  "amp_origin": [
+    55.5,
+    8.8,
+    37.1
+  ],
+  "speaker_origin": [
+    80,
+    23,
+    30.6
+  ],
+  "amp_holes": [
+    [
+      74.75,
+      26.25
+    ],
+    [
+      58.65,
+      26.25
+    ]
+  ],
+  "speaker_holes": [
+    [
+      146.75,
+      50.95
+    ],
+    [
+      83.05,
+      26.35
+    ]
+  ],
+  "lid_holes": [
+    [
+      24,
+      6
+    ],
+    [
+      134,
+      6
+    ],
+    [
+      39.5,
+      60
+    ],
+    [
+      118.5,
+      60
+    ]
+  ],
+  "switch_shape_measured": false,
+  "power_center_yz": [
+    19,
+    41.55
+  ],
+  "power_wall": "right short side",
+  "power_aperture_yz": [
+    5.5,
+    13.1
+  ],
+  "power_flange_rear_edge_z": 49.35,
+  "power_flange_gap_to_lid_mm": 0.35,
+  "USB_insert_outer_skin_mm": 0.6,
+  "USB_insert_pause_height_mm": 4.05,
+  "USB_insert_pocket_print_z_mm": [
+    1.05,
+    4.05
+  ],
+  "USB_insert_installation": "during print pause; outside closed"
+}

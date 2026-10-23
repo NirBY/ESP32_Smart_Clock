@@ -1,0 +1,22 @@
+{
+  "wall": "right, opposite ESP",
+  "aperture_yz_mm": [
+    5.5,
+    13.1
+  ],
+  "aperture_center_yz_mm": [
+    19,
+    41.55
+  ],
+  "flange_rear_edge_z_mm": 49.35,
+  "lid_plane_z_mm": 49.7,
+  "flange_to_lid_nominal_gap_mm": 0.35,
+  "neck_to_speaker_nominal_gap_mm": 1.4,
+  "old_top_opening_closed": true,
+  "wire_route_gauge_mm": [
+    5,
+    5
+  ],
+  "speaker_extra_downward_shift_mm": 1,
+  "limits": "Rounded neck inferred from photo, spring motion not simulated; physical seating depends on print tolerance."
+}

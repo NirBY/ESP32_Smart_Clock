@@ -1,0 +1,17 @@
+{
+  "cage_vertical_lift_samples_mm": [
+    0,
+    1,
+    2,
+    4,
+    8,
+    12,
+    20
+  ],
+  "wire_route_gauge_cross_section_mm": [
+    5,
+    5
+  ],
+  "collisions": [],
+  "limits": "Discrete rigid-envelope checks. The 5x5 route gauge is a design clearance, not a measured cable bundle. Physical assembly and flexibility not verified."
+}

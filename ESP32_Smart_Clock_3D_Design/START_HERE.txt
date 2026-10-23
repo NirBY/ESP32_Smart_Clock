@@ -1,0 +1,20 @@
+ESP32 Smart Clock enclosure - final design revision 18
+Creator: NirBY | License: CC BY-NC-SA 4.0
+
+Print one each: stl/body.stl, stl/lid.stl, stl/sensor_cage.stl.
+Units: mm. Scale: 100%. Keep supplied print orientations.
+
+BODY: white PLA, 0.20 mm first and later layers. At least three solid
+bottom layers form the 0.6 mm LED diffuser. Opaque black PLA blocks light.
+
+LID: fixed 0.15 mm first AND later layers. Pause AFTER completing Z 4.05 mm
+(27 layers), BEFORE Z 4.20 mm. Install two M3 brass inserts, length 2.9 mm,
+in the USB-side posts. Their tops must sit below the paused surface.
+The 0.6 mm rear closures are integral to the lid, not separate parts.
+
+Read PRINT_GUIDE.pdf for the exact insert procedure, fasteners and assembly.
+The complete latest assembly and pause workflow are not physically validated.
+
+Optional fit samples and editable source are in the Creality Upload and
+GitHub Source packages, or the project repository:
+https://github.com/NirBY/ESP32_Smart_Clock

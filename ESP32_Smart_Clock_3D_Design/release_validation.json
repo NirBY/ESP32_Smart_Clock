@@ -1,0 +1,110 @@
+{
+  "revision": 18,
+  "units": "mm",
+  "checks_passed": [
+    "validate_revision.py",
+    "check_features.py",
+    "check_integrated_cover.py",
+    "check_power_position.py",
+    "check_bottom_vents.py",
+    "check_sensor_installation.py"
+  ],
+  "files": [
+    {
+      "file": "stl/body.stl",
+      "sha256": "488a73047e0fae26a61d1977fdd91d4842d822eaaf7a11e9dbd0f4cbe85fd28f",
+      "bytes": 562284,
+      "components": 1,
+      "watertight": true,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          158.0,
+          66.0,
+          49.70000076293945
+        ]
+      ]
+    },
+    {
+      "file": "stl/lid.stl",
+      "sha256": "712c77def99f77c79ead26119a73f57867816afe8c4b68fa23693e0d8c967651",
+      "bytes": 753484,
+      "components": 1,
+      "watertight": true,
+      "bounds_mm": [
+        [
+          0.0,
+          -6.0,
+          1.9073499402111338e-07
+        ],
+        [
+          158.0,
+          60.0,
+          9.0
+        ]
+      ]
+    },
+    {
+      "file": "stl/sensor_cage.stl",
+      "sha256": "e54ac9b41054b41766bf6ee635a835146ac9719c45c7444c569e84fc81275285",
+      "bytes": 79484,
+      "components": 1,
+      "watertight": true,
+      "bounds_mm": [
+        [
+          0.0,
+          1.9073499402111338e-07,
+          0.0
+        ],
+        [
+          39.0,
+          27.5,
+          11.5
+        ]
+      ]
+    },
+    {
+      "file": "test-pieces/esp_gauge.stl",
+      "sha256": "35fc4f3e50e6937c8101711ea21eaa6a18bedcb0ab3625215d0ade17b36b4283",
+      "bytes": 148084,
+      "components": 1,
+      "watertight": true,
+      "bounds_mm": [
+        [
+          0.0,
+          13.899999618530273,
+          1.9073499402111338e-07
+        ],
+        [
+          10.0,
+          46.099998474121094,
+          7.5
+        ]
+      ]
+    },
+    {
+      "file": "test-pieces/power_gauge.stl",
+      "sha256": "523a3d336980571300044329006d7d4f8c9fded7f1be70e7d426b96c5f174624",
+      "bytes": 15684,
+      "components": 1,
+      "watertight": true,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          22.0,
+          15.0,
+          2.25
+        ]
+      ]
+    }
+  ],
+  "physical_validation": "0.6 mm white PLA diffuser tested; latest full assembly and insert-pause workflow untested."
+}

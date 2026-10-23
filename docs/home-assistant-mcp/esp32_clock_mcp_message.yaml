@@ -1,0 +1,26 @@
+alias: ESP32 Clock MCP Message
+description: Show a scrolling message on the clock, or clear it with empty text. Use supported Latin characters/emojis;
+  Hebrew rendering is not guaranteed. Message overrides timer temporarily. Duration is configured by screen_message_seconds.
+mode: queued
+max: 10
+fields:
+  message:
+    description: Text, at most 100 characters. Empty text clears the display message.
+    required: true
+    selector:
+      text: {}
+sequence:
+- if: '{{ not (message is defined and message is string and message|length <= 100) }}'
+  then:
+  - stop: message must be a string of at most 100 characters
+    error: true
+- action: text.set_value
+  target:
+    entity_id: text.esp32_smart_clock_screen_message
+  data:
+    value: '{{ message }}'
+- variables:
+    result:
+      status: command_sent
+- stop: Clock request completed
+  response_variable: result

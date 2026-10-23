@@ -1,0 +1,51 @@
+alias: ESP32 Clock MCP Timer
+description: Start, pause, resume or cancel the physical clock countdown. Start replaces any current countdown.
+  It runs locally, shows remaining time, and plays a six-second melody on completion unless muted. Convert minutes
+  to seconds.
+mode: queued
+max: 10
+fields:
+  operation:
+    description: start, pause, resume or cancel.
+    required: true
+    selector:
+      select:
+        options:
+        - start
+        - pause
+        - resume
+        - cancel
+  seconds:
+    description: Required for start only. Whole seconds from 1 to 86400.
+    required: false
+    selector:
+      number:
+        min: 1
+        max: 86400
+        mode: box
+sequence:
+- if: '{{ not (operation is defined and operation in [''start'',''pause'',''resume'',''cancel'']) }}'
+  then:
+  - stop: Invalid operation
+    error: true
+- choose:
+  - conditions: '{{ operation == ''start'' }}'
+    sequence:
+    - if: '{{ not (seconds is defined and is_number(seconds) and 1 <= seconds|float <= 86400 and seconds|float ==
+        seconds|int) }}'
+      then:
+      - stop: Start requires whole seconds 1..86400
+        error: true
+    - action: esphome.esp32_smart_clock_start_timer
+      data:
+        seconds: '{{ seconds | int }}'
+  default:
+  - action: button.press
+    target:
+      entity_id: '{{ ''button.esp32_smart_clock_timer_'' + operation + ''_timer'' }}'
+- variables:
+    result:
+      operation: '{{ operation }}'
+      status: command_sent
+- stop: Clock request completed
+  response_variable: result

@@ -1,0 +1,14 @@
+name: Firmware unit tests
+on:
+  push:
+    paths: ['src/clock_timer.h', 'tests/**', '.github/workflows/firmware-unit-tests.yml']
+  pull_request:
+    paths: ['src/clock_timer.h', 'tests/**', '.github/workflows/firmware-unit-tests.yml']
+permissions:
+  contents: read
+jobs:
+  timer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - run: g++ -std=c++17 -Wall -Wextra -Werror tests/clock_timer_test.cpp -o /tmp/clock_timer_test && /tmp/clock_timer_test

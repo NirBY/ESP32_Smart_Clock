@@ -76,11 +76,13 @@ jobs:
             echo "- PlatformIO (ESPHome): $(pio --version)"
             echo "- PlatformIO (Arduino): $("$ARDUINO_PIO" --version)"
             echo
-            echo "Builds completed successfully with the latest packages available to pip and PlatformIO:"
+            echo "Builds completed with current pip ESPHome and the pinned Arduino dependencies below:"
             echo
             echo "- ESPHome smart clock firmware"
             echo "- PlatformIO hardware test firmware"
             echo "- PlatformIO Bluetooth speaker firmware"
+            echo
+            "$ARDUINO_PIO" pkg list
             echo
             echo "Review the automation branch before creating a new release."
           } > .github/reports/daily-package-update.md

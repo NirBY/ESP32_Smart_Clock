@@ -1,0 +1,70 @@
+{
+  "parts": {
+    "body": {
+      "watertight": true,
+      "winding": true,
+      "components": 1,
+      "volume_mm3": 65905.55850464436,
+      "bounds_mm": [
+        [
+          0.0,
+          0.0,
+          0.0
+        ],
+        [
+          158.0,
+          66.0,
+          49.70000076293945
+        ]
+      ]
+    },
+    "lid": {
+      "watertight": true,
+      "winding": true,
+      "components": 1,
+      "volume_mm3": 13775.183838517687,
+      "bounds_mm": [
+        [
+          0.0,
+          -6.0,
+          1.9073499402111338e-07
+        ],
+        [
+          158.0,
+          60.0,
+          9.0
+        ]
+      ]
+    },
+    "sensor_cage": {
+      "watertight": true,
+      "winding": true,
+      "components": 1,
+      "volume_mm3": 2572.691328895228,
+      "bounds_mm": [
+        [
+          0.0,
+          1.9073499402111338e-07,
+          0.0
+        ],
+        [
+          39.0,
+          27.5,
+          11.5
+        ]
+      ]
+    }
+  },
+  "collisions": [],
+  "insertion_collisions": [],
+  "no_ESP_outer_bulge": true,
+  "side_wall_mm": 2.25,
+  "front_skin_mm": 0.6,
+  "display_to_esp_wire_gap_mm": 5.1,
+  "total_bounds_mm": [
+    158,
+    77.5,
+    51.2
+  ],
+  "limits": "Rigid hardware envelopes from user measurements; switches not measured; flexible cables and print tolerances require physical fit check."
+}

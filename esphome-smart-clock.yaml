@@ -1,7 +1,7 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
-  firmware_version: "0.1.0-beta.14"
+  firmware_version: "0.1.0-beta.15"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -14,6 +14,8 @@ esphome:
     version: "${firmware_version}"
   build_path: C:/Users/nirbe/.esphome/build/${device_name}
   devices:
+    - id: timer_device
+      name: "ESP32 Smart Clock Timer"
     - id: display_device
       name: "ESP32 Smart Clock Display"
     - id: alarm_device
@@ -26,6 +28,7 @@ esphome:
       name: "ESP32 Smart Clock Sensors"
   includes:
     - src/system_health.h
+    - src/clock_timer.h
   on_boot:
     priority: -100
     then:
@@ -44,6 +47,8 @@ esp32:
     advanced:
       minimum_chip_revision: "3.1"
       sram1_as_iram: true
+      # Confirmed by this clock's 2026.10 boot log; drops unused vendor drivers.
+      flash_chip: generic
 
 logger:
   # DEBUG logging keeps more strings/buffers active and can steal CPU while audio
@@ -73,6 +78,30 @@ api:
   max_connections: 2
   max_send_queue: 4
   actions:
+    - action: start_timer
+      variables:
+        seconds: int
+      then:
+        - lambda: |-
+            if (seconds < 1 || seconds > 86400) {
+              ESP_LOGW("timer", "Duration must be 1..86400 seconds");
+              return;
+            }
+            smart_clock::timer().start((uint32_t) seconds, millis());
+            id(timer_done_until) = 0;
+            id(timer_finished_pending) = false;
+        - component.update: timer_remaining
+        - component.update: timer_state
+        - component.update: matrix_display
+    - action: pause_timer
+      then:
+        - button.press: timer_pause
+    - action: resume_timer
+      then:
+        - button.press: timer_resume
+    - action: cancel_timer
+      then:
+        - button.press: timer_cancel
     - action: show_message
       variables:
         message: string
@@ -93,6 +122,7 @@ api:
 
 ota:
   - platform: esphome
+    encryption:
   - platform: http_request
 
 http_request:
@@ -129,6 +159,14 @@ wifi:
 captive_portal:
 
 globals:
+  - id: timer_done_until
+    type: uint32_t
+    restore_value: no
+    initial_value: '0'
+  - id: timer_finished_pending
+    type: bool
+    restore_value: no
+    initial_value: 'false'
   # Temporary display state. Each *_until value stores a millis() deadline;
   # the display lambda falls back to the clock after the deadline expires.
   - id: text_message
@@ -458,6 +496,15 @@ script:
             device: esp32-smart-clock
 
 sensor:
+  - platform: template
+    name: "Timer Remaining"
+    id: timer_remaining
+    device_id: timer_device
+    unit_of_measurement: s
+    accuracy_decimals: 0
+    icon: "mdi:timer-sand"
+    update_interval: 1s
+    lambda: return smart_clock::timer().seconds();
   - platform: aht10
     variant: AHT20
     temperature:
@@ -512,6 +559,13 @@ update:
 
 text_sensor:
   - platform: template
+    name: "Timer State"
+    id: timer_state
+    device_id: timer_device
+    icon: "mdi:timer-outline"
+    update_interval: 1s
+    lambda: return {smart_clock::timer().state_name()};
+  - platform: template
     name: "Supported Emojis"
     id: supported_emojis
     device_id: display_device
@@ -540,6 +594,28 @@ text:
       - component.update: matrix_display
 
 interval:
+  - interval: 100ms
+    then:
+      - lambda: |-
+          id(timer_finished_pending) |= smart_clock::timer().tick(millis());
+      - if:
+          condition:
+            lambda: return id(timer_finished_pending);
+          then:
+            - lambda: |-
+                id(timer_finished_pending) = false;
+                id(timer_done_until) = millis() + 10000;
+                ESP_LOGI("timer", "Timer finished; playing six-second completion melody");
+            - component.update: timer_remaining
+            - component.update: timer_state
+            - component.update: matrix_display
+            - media_player.speaker.play_on_device_media_file:
+                media_file: timer_finished_chime
+                announcement: true
+            - homeassistant.event:
+                event: esphome.timer_finished
+                data:
+                  device: esp32-smart-clock
   # Play small local beeps shortly after they are requested.
   # Keeping this outside on_volume avoids referencing the embedded media file
   # while the media_player component is still being generated.
@@ -716,7 +792,98 @@ interval:
                 id(sensor_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
             - component.update: matrix_display
 
+button:
+  - platform: template
+    name: "Start Timer"
+    id: timer_start
+    device_id: timer_device
+    icon: "mdi:timer-outline"
+    on_press:
+      - lambda: |-
+          smart_clock::timer().start((uint32_t) (id(timer_minutes).state * 60), millis());
+          id(timer_done_until) = 0;
+          id(timer_finished_pending) = false;
+      - component.update: timer_remaining
+      - component.update: timer_state
+      - component.update: matrix_display
+  - platform: template
+    name: "Pause Timer"
+    id: timer_pause
+    device_id: timer_device
+    icon: "mdi:timer-outline"
+    on_press:
+      - lambda: |-
+          id(timer_finished_pending) |= smart_clock::timer().tick(millis());
+          smart_clock::timer().pause();
+      - component.update: timer_remaining
+      - component.update: timer_state
+      - component.update: matrix_display
+  - platform: template
+    name: "Resume Timer"
+    id: timer_resume
+    device_id: timer_device
+    icon: "mdi:timer-outline"
+    on_press:
+      - lambda: |-
+          smart_clock::timer().resume(millis());
+      - component.update: timer_remaining
+      - component.update: timer_state
+      - component.update: matrix_display
+  - platform: template
+    name: "Cancel Timer"
+    id: timer_cancel
+    device_id: timer_device
+    icon: "mdi:timer-outline"
+    on_press:
+      - lambda: |-
+          smart_clock::timer().cancel();
+          id(timer_done_until) = 0;
+          id(timer_finished_pending) = false;
+      - component.update: timer_remaining
+      - component.update: timer_state
+      - component.update: matrix_display
+
 number:
+  - platform: template
+    name: "Timer Display Seconds"
+    id: timer_display_seconds
+    device_id: timer_device
+    entity_category: config
+    icon: "mdi:timer-cog-outline"
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 120
+    step: 1
+    initial_value: 10
+    mode: box
+  - platform: template
+    name: "Clock Display Seconds"
+    id: timer_clock_seconds
+    device_id: timer_device
+    entity_category: config
+    icon: "mdi:timer-cog-outline"
+    unit_of_measurement: s
+    optimistic: true
+    restore_value: true
+    min_value: 0
+    max_value: 30
+    step: 1
+    initial_value: 2
+    mode: box
+  - platform: template
+    name: "Timer Minutes"
+    id: timer_minutes
+    device_id: timer_device
+    icon: "mdi:timer-edit-outline"
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 1440
+    step: 1
+    initial_value: 5
+    mode: box
   - platform: template
     name: "Display Brightness"
     id: display_brightness
@@ -1073,11 +1240,18 @@ display:
     lambda: |-
       const uint32_t now_ms = millis();
 
-      // Use signed subtraction so millis() wraparound does not make expired
-      // temporary screens look active again.
-      auto active_until = [now_ms](uint32_t until) -> bool {
-        return (int32_t) (until - now_ms) > 0;
+      // Expire every deadline even when a higher-priority screen hides it.
+      auto active_until = [now_ms](uint32_t &until) -> bool {
+        return smart_clock::deadline_active(until, now_ms);
       };
+      active_until(id(timer_done_until));
+      active_until(id(text_message_until));
+      active_until(id(media_message_until));
+      active_until(id(system_alert_until));
+      active_until(id(wifi_alert_until));
+      active_until(id(date_message_until));
+      active_until(id(sensor_message_until));
+
 
       auto get_scroll_x = [&now_ms](const std::string &text, int text_width, int gaps, bool is_rtl) -> int {
         static std::string last_scrolled_text = "";
@@ -1631,7 +1805,12 @@ display:
         draw_small_glyph(22, '0' + (humidity % 10));
         draw_small_glyph(27, '%');
       };
+      int slide_x = 0;
+      auto numeric_pixel = [&](int x, int y, Color color) {
+        if (x >= 0 && x < 32) it.draw_pixel_at(x, y, color);
+      };
       auto draw_digit = [&](int x, int value) {
+        x += slide_x;
         static const uint8_t digits[10][7] = {
           {0b1111, 0b1001, 0b1001, 0b1001, 0b1001, 0b1001, 0b1111},
           {0b0010, 0b0110, 0b0010, 0b0010, 0b0010, 0b0010, 0b0111},
@@ -1651,16 +1830,18 @@ display:
         for (int y = 0; y < 7; y++) {
           for (int col = 0; col < 4; col++) {
             if (digits[value][y] & (1 << (3 - col))) {
-              it.draw_pixel_at(x + col, y, Color::WHITE);
+              numeric_pixel(x + col, y, Color::WHITE);
             }
           }
         }
       };
       auto draw_colon = [&](int x) {
-        it.draw_pixel_at(x, 2, Color::WHITE);
-        it.draw_pixel_at(x, 5, Color::WHITE);
+        x += slide_x;
+        numeric_pixel(x, 2, Color::WHITE);
+        numeric_pixel(x, 5, Color::WHITE);
       };
       auto draw_large_digit = [&](int x, int value) {
+        x += slide_x;
         static const uint8_t digits[10][7] = {
           {0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110},
           {0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110},
@@ -1680,19 +1861,20 @@ display:
         for (int y = 0; y < 7; y++) {
           for (int col = 0; col < 5; col++) {
             if (digits[value][y] & (1 << (4 - col))) {
-              it.draw_pixel_at(x + col, y, Color::WHITE);
+              numeric_pixel(x + col, y, Color::WHITE);
             }
           }
         }
       };
       auto draw_large_colon = [&](int x, bool visible) {
+        x += slide_x;
         if (!visible) {
           return;
         }
-        it.draw_pixel_at(x, 2, Color::WHITE);
-        it.draw_pixel_at(x + 1, 2, Color::WHITE);
-        it.draw_pixel_at(x, 5, Color::WHITE);
-        it.draw_pixel_at(x + 1, 5, Color::WHITE);
+        numeric_pixel(x, 2, Color::WHITE);
+        numeric_pixel(x + 1, 2, Color::WHITE);
+        numeric_pixel(x, 5, Color::WHITE);
+        numeric_pixel(x + 1, 5, Color::WHITE);
       };
       auto draw_clock_hh_mm_ss = [&](int hour, int minute, int second) {
         draw_digit(0, hour / 10);
@@ -1737,8 +1919,64 @@ display:
         return;
       }
 
-      if (id(show_system_alerts).state && active_until(id(wifi_alert_until))) {
+      if (id(show_system_alerts).state && !id(wifi_component).is_connected() && active_until(id(wifi_alert_until))) {
         show_text("NO WIFI");
+        return;
+      }
+
+      if (active_until(id(timer_done_until))) {
+        show_text("DONE");
+        return;
+      }
+
+      // Timer takes precedence over periodic date/sensor screens. Explicit
+      // messages and system alerts still win. Pause shows two dots at bottom.
+      if (smart_clock::timer().visible()) {
+        const uint32_t remaining = smart_clock::timer().seconds();
+        auto clock_now = id(ntp_time).now();
+        const bool clock_page = clock_now.is_valid() && smart_clock::timer().show_clock(now_ms, (uint32_t) id(timer_display_seconds).state, (uint32_t) id(timer_clock_seconds).state);
+        static bool previous_clock_page = false;
+        static uint32_t transition_ms = 0;
+        static uint32_t last_timer_frame = 0;
+        if (now_ms - last_timer_frame > 250) {
+          previous_clock_page = clock_page;
+          transition_ms = now_ms - 320;
+        } else if (clock_page != previous_clock_page) {
+          previous_clock_page = clock_page;
+          transition_ms = now_ms;
+        }
+        last_timer_frame = now_ms;
+        auto draw_timer = [&]() {
+          if (remaining >= 3600) {
+            draw_clock_hh_mm_ss(remaining / 3600, (remaining / 60) % 60, remaining % 60);
+          } else {
+            draw_large_digit(1, (remaining / 60) / 10);
+            draw_large_digit(7, (remaining / 60) % 10);
+            draw_large_colon(14, true);
+            draw_large_digit(18, (remaining % 60) / 10);
+            draw_large_digit(24, remaining % 10);
+          }
+        };
+        auto draw_page = [&](bool clock) {
+          if (clock) draw_clock(clock_now.hour, clock_now.minute, clock_now.second);
+          else draw_timer();
+        };
+        const uint32_t transition = now_ms - transition_ms;
+        if (transition < 320) {
+          slide_x = -(int) (transition * 32 / 320);
+          draw_page(!clock_page);
+          slide_x += 32;
+          draw_page(clock_page);
+          slide_x = 0;
+        } else {
+          draw_page(clock_page);
+        }
+        // Bottom corner identifies countdown; second dot means paused.
+        if (!clock_page) {
+          it.draw_pixel_at(0, 7, Color::WHITE);
+          if (smart_clock::timer().state() == smart_clock::Countdown::State::PAUSED)
+            it.draw_pixel_at(2, 7, Color::WHITE);
+        }
         return;
       }
 
@@ -1822,6 +2060,8 @@ media_player:
     id: clock_speaker
     device_id: audio_device
     files:
+      - id: timer_finished_chime
+        file: media/timer-finished.wav
       # Tiny local WAV used for volume feedback. It plays as an announcement so
       # the user hears the current volume immediately after changing it.
       - id: volume_beep
@@ -1858,32 +2098,14 @@ media_player:
       - component.update: matrix_display
     on_idle:
       - lambda: |-
-          const uint32_t elapsed_ms = millis() - id(media_playback_started_ms);
-          id(media_playback_failed) = id(media_stream_playing) && elapsed_ms < 8000;
+          // Idle can mean successful completion or a deliberate stop, even
+          // for a short clip. Duration is not evidence of a transport error.
+          id(media_playback_failed) = false;
           id(audio_playback_active) = false;
           id(media_stream_playing) = false;
-          ESP_LOGI("audio", "Media player idle after %u ms (failed_fast=%s)",
-                   (unsigned) elapsed_ms, id(media_playback_failed) ? "true" : "false");
+          ESP_LOGI("audio", "Media player idle");
           id(media_message).clear();
-          if (id(media_playback_failed)) {
-            id(media_message) = "AUDIO ERR";
-            id(media_message_until) = millis() + 5000;
-          } else {
-            id(media_message_until) = 0;
-          }
-      - if:
-          condition:
-            lambda: |-
-              return id(media_playback_failed);
-          then:
-            - homeassistant.event:
-                event: esphome.media_playback_failed
-                data:
-                  device: esp32-smart-clock
-                  reason: playback_stopped_early_or_unsupported_stream
-                  hint: use_16khz_mono_or_a_smaller_stream
-            - lambda: |-
-                id(media_playback_failed) = false;
+          id(media_message_until) = 0;
       - component.update: matrix_display
     on_turn_off:
       - lambda: |-

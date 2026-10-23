@@ -1,0 +1,312 @@
+alias: ESP32 Clock MCP Setting
+description: 'Change one clock setting: brightness, countdown/clock rotation seconds, time format, screen durations,
+  hourly beep/quiet hours, speaker enabled or alarm settings. Read Status for current values. Clock rotation 0 means
+  countdown only.'
+mode: queued
+max: 10
+fields:
+  setting:
+    description: Clock setting to change.
+    required: true
+    selector:
+      select:
+        options:
+        - timer_timer_display_seconds
+        - timer_clock_display_seconds
+        - timer_timer_minutes
+        - display_brightness
+        - system_alert_seconds
+        - system_alert_interval_seconds
+        - screen_message_seconds
+        - media_message_seconds
+        - audio_hourly_beep_quiet_start_hour
+        - audio_hourly_beep_quiet_end_hour
+        - alarm_message_seconds
+        - wi_fi_alert_seconds
+        - wi_fi_alert_interval_seconds
+        - date_message_seconds
+        - sensor_message_seconds
+        - sensor_message_interval_seconds
+        - alarm_hour
+        - alarm_minute
+        - show_system_alerts
+        - speaker_connected
+        - audio_hourly_beep_enabled
+        - audio_hourly_beep_quiet_hours_enabled
+        - alarm_enabled
+        - time_format
+  value:
+    description: Numeric value as text, on/off for switches, or HH:MM / HH:MM:SS for time format.
+    required: true
+    selector:
+      text: {}
+sequence:
+- if: '{{ not (setting is defined and value is defined) }}'
+  then:
+  - stop: setting and value are required
+    error: true
+- choose:
+  - conditions: '{{ setting == ''timer_timer_display_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 120 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..120 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_timer_timer_display_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''timer_clock_display_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 0 <= value|float <= 30 and (value|float - 0) % 1 == 0) }}'
+      then:
+      - stop: Value must be 0..30 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_timer_clock_display_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''timer_timer_minutes'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 1440 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..1440 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_timer_timer_minutes
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''display_brightness'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 0 <= value|float <= 15 and (value|float - 0) % 1 == 0) }}'
+      then:
+      - stop: Value must be 0..15 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_display_brightness
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''system_alert_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 30 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..30 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_system_alert_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''system_alert_interval_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 3 <= value|float <= 300 and (value|float - 3) % 1 == 0) }}'
+      then:
+      - stop: Value must be 3..300 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_system_alert_interval_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''screen_message_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 60 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..60 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_screen_message_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''media_message_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 60 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..60 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_media_message_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''audio_hourly_beep_quiet_start_hour'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 0 <= value|float <= 23 and (value|float - 0) % 1 == 0) }}'
+      then:
+      - stop: Value must be 0..23 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_audio_hourly_beep_quiet_start_hour
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''audio_hourly_beep_quiet_end_hour'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 0 <= value|float <= 23 and (value|float - 0) % 1 == 0) }}'
+      then:
+      - stop: Value must be 0..23 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_audio_hourly_beep_quiet_end_hour
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''alarm_message_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 60 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..60 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_alarm_message_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''wi_fi_alert_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 30 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..30 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_wi_fi_alert_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''wi_fi_alert_interval_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 5 <= value|float <= 300 and (value|float - 5) % 5 == 0) }}'
+      then:
+      - stop: Value must be 5..300 in steps of 5
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_wi_fi_alert_interval_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''date_message_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 30 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..30 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_date_message_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''sensor_message_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 1 <= value|float <= 30 and (value|float - 1) % 1 == 0) }}'
+      then:
+      - stop: Value must be 1..30 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_sensor_message_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''sensor_message_interval_seconds'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 5 <= value|float <= 300 and (value|float - 5) % 5 == 0) }}'
+      then:
+      - stop: Value must be 5..300 in steps of 5
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_sensor_message_interval_seconds
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''alarm_hour'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 0 <= value|float <= 23 and (value|float - 0) % 1 == 0) }}'
+      then:
+      - stop: Value must be 0..23 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_alarm_hour
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''alarm_minute'' }}'
+    sequence:
+    - if: '{{ not (is_number(value) and 0 <= value|float <= 59 and (value|float - 0) % 1 == 0) }}'
+      then:
+      - stop: Value must be 0..59 in steps of 1
+        error: true
+    - action: number.set_value
+      target:
+        entity_id: number.esp32_smart_clock_alarm_minute
+      data:
+        value: '{{ value | float }}'
+  - conditions: '{{ setting == ''show_system_alerts'' }}'
+    sequence:
+    - if: '{{ not (value|string|lower in [''on'',''off'']) }}'
+      then:
+      - stop: Use on or off
+        error: true
+    - action: '{{ ''switch.turn_on'' if value|string|lower == ''on'' else ''switch.turn_off'' }}'
+      target:
+        entity_id: switch.esp32_smart_clock_show_system_alerts
+  - conditions: '{{ setting == ''speaker_connected'' }}'
+    sequence:
+    - if: '{{ not (value|string|lower in [''on'',''off'']) }}'
+      then:
+      - stop: Use on or off
+        error: true
+    - action: '{{ ''switch.turn_on'' if value|string|lower == ''on'' else ''switch.turn_off'' }}'
+      target:
+        entity_id: switch.esp32_smart_clock_speaker_connected
+  - conditions: '{{ setting == ''audio_hourly_beep_enabled'' }}'
+    sequence:
+    - if: '{{ not (value|string|lower in [''on'',''off'']) }}'
+      then:
+      - stop: Use on or off
+        error: true
+    - action: '{{ ''switch.turn_on'' if value|string|lower == ''on'' else ''switch.turn_off'' }}'
+      target:
+        entity_id: switch.esp32_smart_clock_audio_hourly_beep_enabled
+  - conditions: '{{ setting == ''audio_hourly_beep_quiet_hours_enabled'' }}'
+    sequence:
+    - if: '{{ not (value|string|lower in [''on'',''off'']) }}'
+      then:
+      - stop: Use on or off
+        error: true
+    - action: '{{ ''switch.turn_on'' if value|string|lower == ''on'' else ''switch.turn_off'' }}'
+      target:
+        entity_id: switch.esp32_smart_clock_audio_hourly_beep_quiet_hours_enabled
+  - conditions: '{{ setting == ''alarm_enabled'' }}'
+    sequence:
+    - if: '{{ not (value|string|lower in [''on'',''off'']) }}'
+      then:
+      - stop: Use on or off
+        error: true
+    - action: '{{ ''switch.turn_on'' if value|string|lower == ''on'' else ''switch.turn_off'' }}'
+      target:
+        entity_id: switch.esp32_smart_clock_alarm_enabled
+  - conditions: '{{ setting == ''time_format'' }}'
+    sequence:
+    - if: '{{ not (value in [''HH:MM'',''HH:MM:SS'']) }}'
+      then:
+      - stop: Unsupported time format
+        error: true
+    - action: select.select_option
+      target:
+        entity_id: select.esp32_smart_clock_time_format
+      data:
+        option: '{{ value }}'
+  default:
+  - stop: Unknown clock setting
+    error: true
+- variables:
+    result:
+      setting: '{{ setting }}'
+      requested_value: '{{ value }}'
+      status: command_sent
+- stop: Clock request completed
+  response_variable: result

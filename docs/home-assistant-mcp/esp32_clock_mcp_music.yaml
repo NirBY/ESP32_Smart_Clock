@@ -1,0 +1,121 @@
+alias: ESP32 Clock MCP Music
+description: Play music on the clock through Music Assistant by song, artist, album, playlist or radio name/URI;
+  pause, resume, stop, next/previous, set volume or mute. Requires Music Assistant and a configured music provider.
+  Playback commands do not guarantee an audible result.
+mode: queued
+max: 10
+fields:
+  operation:
+    description: Music operation.
+    required: true
+    selector:
+      select:
+        options:
+        - play
+        - pause
+        - resume
+        - stop
+        - next
+        - previous
+        - volume
+        - mute
+        - unmute
+  query:
+    description: Name or provider URI for play. Include the artist in a song query to disambiguate.
+    required: false
+    selector:
+      text: {}
+  media_type:
+    description: Type of query for play; defaults to track.
+    required: false
+    selector:
+      select:
+        options:
+        - track
+        - artist
+        - album
+        - playlist
+        - radio
+  volume:
+    description: Percent 0..100 for volume; does not automatically unmute.
+    required: false
+    selector:
+      number:
+        min: 0
+        max: 100
+        mode: box
+sequence:
+- if: '{{ not (operation is defined) }}'
+  then:
+  - stop: operation required
+    error: true
+- choose:
+  - conditions: '{{ operation == ''pause'' }}'
+    sequence:
+    - action: media_player.media_pause
+      target:
+        entity_id: media_player.esp32_smart_clock_audio_speaker
+  - conditions: '{{ operation == ''resume'' }}'
+    sequence:
+    - action: media_player.media_play
+      target:
+        entity_id: media_player.esp32_smart_clock_audio_speaker
+  - conditions: '{{ operation == ''stop'' }}'
+    sequence:
+    - action: media_player.media_stop
+      target:
+        entity_id: media_player.esp32_smart_clock_audio_speaker
+  - conditions: '{{ operation == ''next'' }}'
+    sequence:
+    - action: media_player.media_next_track
+      target:
+        entity_id: media_player.esp32_smart_clock_audio_speaker
+  - conditions: '{{ operation == ''previous'' }}'
+    sequence:
+    - action: media_player.media_previous_track
+      target:
+        entity_id: media_player.esp32_smart_clock_audio_speaker
+  - conditions: '{{ operation == ''play'' }}'
+    sequence:
+    - if: '{{ not (query is defined and query is string and query|trim|length > 0) }}'
+      then:
+      - stop: Provide a song/artist/album/playlist name or URI
+        error: true
+    - if: '{{ not (media_type|default(''track'') in [''track'',''artist'',''album'',''playlist'',''radio'']) }}'
+      then:
+      - stop: Invalid media type
+        error: true
+    - action: music_assistant.play_media
+      target:
+        entity_id: media_player.esp32_smart_clock_audio_speaker
+      data:
+        media_id: '{{ query }}'
+        media_type: '{{ media_type|default(''track'') }}'
+        enqueue: play
+  - conditions: '{{ operation == ''volume'' }}'
+    sequence:
+    - if: '{{ not (volume is defined and is_number(volume) and 0 <= volume|float <= 100) }}'
+      then:
+      - stop: volume must be 0..100
+        error: true
+    - action: media_player.volume_set
+      target:
+        entity_id: media_player.esp32_smart_clock_speaker
+      data:
+        volume_level: '{{ volume|float / 100 }}'
+  - conditions: '{{ operation in [''mute'',''unmute''] }}'
+    sequence:
+    - action: media_player.volume_mute
+      target:
+        entity_id: media_player.esp32_smart_clock_speaker
+      data:
+        is_volume_muted: '{{ operation == ''mute'' }}'
+  default:
+  - stop: Invalid audio operation
+    error: true
+- variables:
+    result:
+      operation: '{{ operation }}'
+      status: command_sent
+- stop: Clock request completed
+  response_variable: result

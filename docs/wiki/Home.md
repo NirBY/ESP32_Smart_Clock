@@ -13,6 +13,12 @@ This wiki contains the detailed project documentation. Keep `README.md` short an
 - [Logs And Troubleshooting](Logs-And-Troubleshooting.md)
 - [Development And Releases](Development-And-Releases.md)
 
+- [Timer](Timer.md)
+- [Complete Wiring](Wiring.md)
+- [Parts and purchase links](Shopping-List.md)
+- [Gallery](Gallery.md)
+- [Home Assistant MCP](../home-assistant-mcp/README.md)
+
 ## Firmware Options
 
 For normal use, install the **ESPHome smart clock firmware** from `esphome-smart-clock.yaml`.

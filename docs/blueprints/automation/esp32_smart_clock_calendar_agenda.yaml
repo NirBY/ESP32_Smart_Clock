@@ -6,6 +6,14 @@ blueprint:
     the clock speaker. Trigger it at a daily time, from an input button, or both.
   domain: automation
   input:
+    include_tentative:
+      name: Include tentative events
+      description: >
+        When off, skip events marked tentative by the calendar provider.
+        Events without a status are retained. Cancelled events are always skipped.
+      default: true
+      selector:
+        boolean:
     calendar_entity:
       name: Calendar
       description: Calendar entity to read today's events from.
@@ -110,6 +118,7 @@ trigger:
     id: manual_button
 
 variables:
+  include_tentative: !input include_tentative
   calendar_entity: !input calendar_entity
   enable_scheduled_run: !input enable_scheduled_run
   enable_display: !input enable_display
@@ -134,7 +143,16 @@ action:
     response_variable: agenda
 
   - variables:
-      today_events: "{{ agenda[calendar_entity].events if agenda is defined and calendar_entity in agenda else [] }}"
+      today_events: >-
+        {% set raw = agenda[calendar_entity].events if agenda is defined and calendar_entity in agenda else [] %}
+        {% set ns = namespace(events=[]) %}
+        {% for event in raw %}
+          {% set status = event.get('status', 'confirmed') | lower %}
+          {% if status not in ['cancelled', 'canceled'] and (include_tentative or status != 'tentative') %}
+            {% set ns.events = ns.events + [event] %}
+          {% endif %}
+        {% endfor %}
+        {{ ns.events }}
       display_message: >-
         {% set events = today_events %}
         {% if events | count == 0 %}

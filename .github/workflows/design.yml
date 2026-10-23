@@ -1,0 +1,31 @@
+name: Validate and package enclosure
+
+on:
+  push:
+    paths:
+      - 'ESP32_Smart_Clock_3D_Design/**'
+      - '.github/workflows/design.yml'
+  pull_request:
+    paths:
+      - 'ESP32_Smart_Clock_3D_Design/**'
+      - '.github/workflows/design.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -r ESP32_Smart_Clock_3D_Design/requirements.txt
+      - run: python ESP32_Smart_Clock_3D_Design/validate_all.py
+      - run: python ESP32_Smart_Clock_3D_Design/package_release.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esp32-clock-enclosure-v18
+          path: ESP32_Smart_Clock_3D_Design/dist/*

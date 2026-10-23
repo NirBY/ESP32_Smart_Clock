@@ -1,0 +1,65 @@
+alias: ESP32 Clock MCP Alarm
+description: Set the clock daily alarm in local clock time (24-hour hour/minute), enable it or disable it. This
+  is a repeating daily alarm, not a dated calendar reminder. Only enable after hour and minute are set.
+mode: queued
+max: 10
+fields:
+  operation:
+    description: set sets time and enables; enable/disable preserve the saved time.
+    required: true
+    selector:
+      select:
+        options:
+        - set
+        - enable
+        - disable
+  hour:
+    description: 24-hour hour, required for set.
+    required: false
+    selector:
+      number:
+        min: 0
+        max: 23
+        mode: box
+  minute:
+    description: Minute, required for set.
+    required: false
+    selector:
+      number:
+        min: 0
+        max: 59
+        mode: box
+sequence:
+- if: '{{ not (operation is defined and operation in [''set'',''enable'',''disable'']) }}'
+  then:
+  - stop: Invalid operation
+    error: true
+- if: '{{ operation == ''set'' }}'
+  then:
+  - if: '{{ not (hour is defined and minute is defined and is_number(hour) and is_number(minute) and 0 <= hour|float
+      <= 23 and 0 <= minute|float <= 59 and hour|float == hour|int and minute|float == minute|int) }}'
+    then:
+    - stop: Hour/minute must be whole numbers in range
+      error: true
+  - action: switch.turn_off
+    target:
+      entity_id: switch.esp32_smart_clock_alarm_enabled
+  - action: number.set_value
+    target:
+      entity_id: number.esp32_smart_clock_alarm_hour
+    data:
+      value: '{{ hour|int }}'
+  - action: number.set_value
+    target:
+      entity_id: number.esp32_smart_clock_alarm_minute
+    data:
+      value: '{{ minute|int }}'
+- action: '{{ ''switch.turn_off'' if operation == ''disable'' else ''switch.turn_on'' }}'
+  target:
+    entity_id: switch.esp32_smart_clock_alarm_enabled
+- variables:
+    result:
+      operation: '{{ operation }}'
+      status: command_sent
+- stop: Clock request completed
+  response_variable: result

@@ -1,0 +1,17 @@
+{
+  "outer_skin_mm": 0.6,
+  "separate_cover_required": false,
+  "pause_print_z_mm": 4.05,
+  "next_layer_z_mm": 4.2,
+  "uniform_layer_height_mm": 0.15,
+  "pause_after_layer_count": 27,
+  "insert_pocket_print_z_mm": [
+    1.05,
+    4.05
+  ],
+  "insert_top_when_seated_mm": 3.95,
+  "M3x8_with_05_washer_nominal_tip_to_cover_clearance_mm": 0.9,
+  "both_holes_closed": true,
+  "both_insert_pockets_accessible_at_pause": true,
+  "limits": "Pause workflow and thermal insertion not physically tested."
+}

@@ -3,6 +3,15 @@
 secrets.yaml
 .vscode/
 
-# Keep only final printable 3D models in the repository.
-ESP32_Smart_Clock_3D_Design/*.stl
-!ESP32_Smart_Clock_3D_Design/*final*.stl
+# Current enclosure sources and STLs are tracked. Local tools and generated bundles are not.
+outputs/
+ESP32_Smart_Clock_3D_Design/dist/
+ESP32_Smart_Clock_3D_Design/previews/*.log
+**/__pycache__/
+*.pyc
+
+# Local audit notes and working captures are not release sources.
+docs/reviews/
+.pytest_cache/
+*.tmp
+*.bak

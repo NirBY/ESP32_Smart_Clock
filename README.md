@@ -1,12 +1,30 @@
 # ESP32 Smart Clock
 
+Release `0.1.0-beta.15` adds a local countdown with a dedicated
+Home Assistant Timer device, configurable countdown/clock display intervals,
+and sliding transitions. See [Timer controls and behavior](docs/wiki/Timer.md).
+ESPHome is pinned to 2026.10.0. The countdown completion melody was installed
+and audibly approved on the creator's clock. The optional HA MCP script package
+still requires installation and end-to-end MCP testing.
+
+![The actual printed clock](docs/images/clock-real.jpg)
+
+[Full wiring diagram](docs/wiki/Wiring.md) · [Parts and purchase links](docs/wiki/Shopping-List.md) ·
+[Photo and STL gallery](docs/wiki/Gallery.md) · [Home Assistant MCP tools](docs/home-assistant-mcp/README.md)
+
 ESP32 smart clock project with an 8x32 MAX7219 LED matrix, AHT20/BMP280 indoor sensors, an NS4168 I2S audio amplifier module, and Home Assistant control through ESPHome.
 
 For normal use, install the **ESPHome smart clock firmware** from `esphome-smart-clock.yaml`.
 
+## Printable enclosure
+
+The [current three-part enclosure](ESP32_Smart_Clock_3D_Design/README.md) includes the final [body](ESP32_Smart_Clock_3D_Design/stl/body.stl), [lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl) and [sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl), editable source, fit samples and an [illustrated assembly guide](ESP32_Smart_Clock_3D_Design/PRINT_GUIDE.pdf). Only the latest design is retained in the working tree.
+
+Print the body in white PLA for the 0.6 mm diffuser. **The lid requires a pause after Z 4.05 mm, using fixed 0.15 mm layers including the first, to install two M3 inserts.** Read the guide before slicing. The complete latest assembly and pause workflow still require a physical fit check. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
+
 ## Quick Start
 
-1. Install the tested ESPHome version: `python -m pip install "esphome==2026.9.0"`.
+1. Install the tested ESPHome version: `python -m pip install "esphome==2026.10.0"`.
 2. Copy `secrets.example.yaml` to `secrets.yaml`.
 3. Put your Wi-Fi and ESPHome API key in `secrets.yaml`.
 4. Connect the ESP32 with a USB data cable.
@@ -97,16 +115,19 @@ blueprint and select your calendar, clock speaker, and ESPHome display action.
 
 ## Tested software versions
 
+Download the enclosure on [Creality Cloud](https://www.crealitycloud.com/model-detail/6adbce3bd4b1f991f82d5813).
+The listing was submitted on October 24, 2026 and is subject to platform review.
+
 | Component | Version |
 |---|---|
-| Clock firmware | 0.1.0-beta.14 |
-| ESPHome | 2026.9.0 (see `ESPHOME_VERSION`) |
-| PlatformIO Core (ESPHome dependency) | 6.1.19 |
+| Clock firmware | 0.1.0-beta.15 (tested locally as beta.15-dev.3) |
+| ESPHome | 2026.10.0 (see `ESPHOME_VERSION`) |
+| PlatformIO Core (ESPHome build environment) | 6.2.0 |
 | PlatformIO Core (separate Arduino builds) | 6.2.0 |
-| Arduino PlatformIO platform | pioarduino 55.03.312 |
+| Arduino PlatformIO platform | pioarduino 55.03.312-1 |
 | Arduino-ESP32 / ESP-IDF | 3.3.12 / 5.5.5 |
 | ESP32-A2DP | 1.8.11 |
-| Adafruit AHTX0 / BMP280 / GFX | 2.0.6 / 3.0.0 / 1.12.6 |
+| Adafruit AHTX0 / BMP280 / GFX | 2.0.6 / 3.0.0 / 1.13.0 |
 | MD_MAX72XX | 3.5.1 |
 
 The ESPHome firmware uses its own supported ESP-IDF toolchain. The Arduino
