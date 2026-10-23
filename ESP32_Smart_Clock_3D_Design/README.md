@@ -117,3 +117,7 @@ Packages are written to this folder's `dist/`: final STLs, GitHub source, and Cr
 ## License
 
 Copyright (c) 2026 NirBY. **CC BY-NC-SA 4.0** for the enclosure and accompanying files. See [ATTRIBUTION.md](ATTRIBUTION.md) and [LICENSE](LICENSE). Firmware elsewhere in the repository is outside this license's scope.
+
+## Print configuration
+
+[Ender-3 V3 KE / white PLA native 3MF](print-profiles/ESP32_Clock_Ender3V3KE_PLA_015mm.3mf) includes all three parts, 0.15 mm layers and the required insert pause. [Read settings and limitations](print-profiles/README.md). Slice-checked; not physically printed.

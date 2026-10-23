@@ -34,7 +34,7 @@ if __name__ == '__main__':
     previews = sorted((ROOT / 'previews').glob('*.png'))
     samples = sorted((ROOT / 'test-pieces').glob('*.stl'))
     package('ESP32_Smart_Clock_Final_STLs.zip', models + [ROOT / n for n in ['START_HERE.txt', 'PRINT_GUIDE.pdf', 'LICENSE', 'ATTRIBUTION.md']])
-    package('ESP32_Smart_Clock_Creality_Upload.zip', models + samples + common + previews + list((ROOT / 'publication').glob('*')))
+    package('ESP32_Smart_Clock_Creality_Upload.zip', models + samples + common + previews + list((ROOT / 'publication').glob('*')) + list((ROOT / 'print-profiles').glob('*')))
     source = [p for p in ROOT.rglob('*') if p.is_file()
               and not any(part in {'dist', '__pycache__', '.venv'} for part in p.relative_to(ROOT).parts)
               and p.suffix not in {'.log', '.pyc'}]
