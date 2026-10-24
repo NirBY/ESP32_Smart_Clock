@@ -17,8 +17,6 @@ serves public source files. The generic public binary is not used.
    app. Home Assistant Container users need a separate builder. The builder
    must support the modern `/ws` API, `devices/update_config` with `expected`,
    and the `firmware/install` job API. Legacy dashboards are not supported.
-   A pinned [Docker/Synology setup](../../deployment/esphome-builder/README.md)
-   is included for users without a builder.
 2. In the builder, create your clock YAML from [examples/clock.yaml](../../examples/clock.yaml).
    Set the **same device name and API encryption key** as your existing clock.
    Keep Wi-Fi, fallback access point and encryption secrets in the builder's
