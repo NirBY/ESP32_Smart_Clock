@@ -56,9 +56,6 @@ power = module('J1','USB-C power socket',24,183,43,15,[
     ('+5V','R',4),('GND','R',12)])
 net(power['+5V'],'+5V',False)
 net(power['GND'],'GND',False)
-buf = module('U2','5 V logic buffer*',100,40,40,38,[
-    ('1A','L',10),('2A','L',20),('3A','L',30),
-    ('1Y','R',10),('2Y','R',20),('3Y','R',30)])
 display = module('U3','MAX7219 / INPUT',190,40,48,45,[
     ('DIN','L',10),('CLK','L',20),('CS / LOAD','L',30),
     ('VCC','R',30),('GND','R',40)])
@@ -67,8 +64,8 @@ sensor = module('U4','AHT20 + BMP280',190,96,48,30,[
 amp = module('U5','NS4168 amplifier',190,136,48,50,[
     ('DIN','L',4),('BCL / BCLK','L',14),('LRC / WS','L',24),
     ('V','L',34),('G','L',44),('SPK+','R',4),('SPK-','R',14)])
-for gpio,a,b,d in [('GPIO23','1A','1Y','DIN'),('GPIO18','2A','2Y','CLK'),('GPIO5','3A','3Y','CS / LOAD')]:
-    wire(esp[gpio],buf[a]); wire(buf[b],display[d])
+for gpio,d in [('GPIO23','DIN'),('GPIO18','CLK'),('GPIO5','CS / LOAD')]:
+    wire(esp[gpio],display[d])
 for gpio,d in [('GPIO21','SDA'),('GPIO22','SCL')]: wire(esp[gpio],sensor[d])
 for gpio,d in [('GPIO25','DIN'),('GPIO26','BCL / BCLK'),('GPIO27','LRC / WS')]: wire(esp[gpio],amp[d])
 for pin,n in [('5V / VIN','+5V'),('GND','GND'),('3V3','3V3')]: net(esp[pin],n)
@@ -79,7 +76,7 @@ speaker = module('LS1','Speaker',110,178,38,20,[('+','L',5),('-','L',15)])
 net(speaker['+'],'SPK+');net(speaker['-'],'SPK-')
 text(130, 131, 'I2S AUDIO', 2)
 text(125, 120, 'I2C / 3.3 V', 2)
-text(126, 86, '*74AHCT125: see buffer sheet', 1.8)
+text(126, 86, 'DIRECT DISPLAY SIGNALS', 1.8)
 text(130, 203, 'SPK- is an amplifier output. NEVER connect it to GND.', 2.3)
 text(132, 214, 'J1: external regulated 5 V supply. J2: ESP32 programming USB-C.', 2.3)
 text(132, 221, 'All identical net labels connect together. Sensor VCC uses 3V3 only.', 2.1)
@@ -119,27 +116,3 @@ text(132,223,'Dots mark connected branches. Crossings without dots are NOT conne
 text(132,231,'Never join +5V and 3V3. Disconnect external VIN before PC USB power.',2)
 OUT=OUT.with_name('power-distribution.kicad_sch')
 OUT.write_text(f'(kicad_sch (version 20250114) (generator "clock_wiring_builder") (uuid {rootid}) (paper "User" 270 245) (lib_symbols {"".join(lib)}) {"".join(items)} (sheet_instances (path "/" (page "1"))))',encoding='utf-8')
-
-# Companion sheet expands the functional buffer shown on the main overview.
-lib.clear(); items.clear()
-rootid = uid('buffer-root')
-text(105, 10, 'DISPLAY BUFFER | 74AHCT125', 3.8)
-text(105, 18, 'Recommended for guaranteed 3.3 V to 5 V logic levels', 2)
-buffer = module('U2','74AHCT125',85,40,55,130,[
-    ('1A','L',10),('2A','L',25),('3A','L',40),
-    ('1Y','R',10),('2Y','R',25),('3Y','R',40),
-    ('VCC','L',60),('GND','L',75),
-    ('/1OE','R',60),('/2OE','R',75),('/3OE','R',90),
-    ('4A','L',105),('/4OE','L',120),('4Y','R',120)])
-for terminal,name in [('1A','GPIO23'),('2A','GPIO18'),('3A','GPIO5'),('VCC','+5V'),('GND','GND'),('4A','GND'),('/4OE','+5V')]: net(buffer[terminal],name)
-for terminal,name in [('1Y','DISPLAY_DIN'),('2Y','DISPLAY_CLK'),('3Y','DISPLAY_CS'),('/1OE','GND'),('/2OE','GND'),('/3OE','GND')]: net(buffer[terminal],name,False)
-x,y=buffer['4Y']; items.append(f'(no_connect (at {x} {y}) (uuid {uid("unused-buffer-output")}))')
-cap=module('C1','100 nF bypass',30,180,45,25,[('1','L',7),('2','L',18)])
-net(cap['1'],'+5V');net(cap['2'],'GND')
-text(137,190,'Place C1 close to U2 VCC/GND.',2)
-text(105,217,'Terminal names shown; use your IC package datasheet for pin numbers.',1.9)
-text(105,225,'/OE means active LOW. Tie unused input 4A LOW and /4OE HIGH.',1.9)
-text(105,233,'The direct-wired prototype does not include this extra buffer.',1.9)
-OUT=OUT.with_name('display-buffer.kicad_sch')
-OUT.write_text(f'(kicad_sch (version 20250114) (generator "clock_wiring_builder") (uuid {rootid}) (paper "User" 210 245) (lib_symbols {"".join(lib)}) {"".join(items)} (sheet_instances (path "/" (page "1"))))',encoding='utf-8')
-print(OUT)

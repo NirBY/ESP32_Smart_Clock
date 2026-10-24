@@ -27,7 +27,3 @@ for a particular row above:
 
 The previously supplied aliexpress-media image URL is an image, not a product
 purchase page. Exact links/variant names remain needed for the BOM above.
-
-For a datasheet-compliant MAX7219 interface, also use a 5 V powered 74AHCT125
-or equivalent TTL-input buffer for DIN/CLK/CS; no mounting provision or vendor
-link for that additional part is included in this enclosure revision.

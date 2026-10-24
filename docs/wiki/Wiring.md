@@ -6,7 +6,7 @@ USB-C supplies all 5 V loads directly in parallel. The sensor VCC connects only 
 
 ![Complete wiring diagram](../images/wiring.png)
 
-[High-resolution PNG](../images/wiring.png) · [Vector diagram](../images/wiring.svg) · [Three-sheet PDF](../hardware/clock-wiring.pdf) · [Editable KiCad schematic](../hardware/clock-wiring.kicad_sch). Signal assignments are taken from
+[High-resolution PNG](../images/wiring.png) · [Vector diagram](../images/wiring.svg) · [Two-sheet PDF](../hardware/clock-wiring.pdf) · [Editable KiCad schematic](../hardware/clock-wiring.kicad_sch). Signal assignments are taken from
 `esphome-smart-clock.yaml`. Connections below are to **module labels**, not to
 universal physical header positions. The photo wire colors are not a pin map.
 
@@ -19,9 +19,9 @@ universal physical header positions. The photo wire colors are not a pin map.
 | ESP32 3V3 | Sensor VCC | 3.3 V only |
 | ESP32 GPIO21 | Sensor SDA | I2C data |
 | ESP32 GPIO22 | Sensor SCL | I2C clock |
-| ESP32 GPIO23 | MAX7219 DIN | Via 3.3→5 V buffer for guaranteed logic levels |
-| ESP32 GPIO18 | MAX7219 CLK | Via buffer |
-| ESP32 GPIO5 | MAX7219 CS / LOAD | Via buffer; GPIO5 is a boot strapping pin |
+| ESP32 GPIO23 | MAX7219 DIN | Direct wire |
+| ESP32 GPIO18 | MAX7219 CLK | Direct wire |
+| ESP32 GPIO5 | MAX7219 CS / LOAD | Direct wire; GPIO5 is a boot strapping pin |
 | ESP32 GPIO25 | NS4168 DIN | I2S audio data |
 | ESP32 GPIO26 | NS4168 BCL / BCLK | I2S bit clock |
 | ESP32 GPIO27 | NS4168 LRC / WS | I2S word clock |
@@ -33,15 +33,8 @@ The four display tiles are already chained on the matrix PCB. Connect to its
 AHT20 (0x38) and BMP280 (configured 0x77) on the same SDA/SCL pair. Its I2C
 pull-ups must go to 3.3 V, never 5 V.
 
-The working prototype uses direct display signal wires. At 5 V, however,
-[MAX7219 specifies a 3.5 V minimum logic-high input](https://www.analog.com/media/en/technical-documentation/data-sheets/MAX7219-MAX7221.pdf),
-so ESP32 3.3 V outputs are outside that guaranteed threshold. For a reproducible
-build, use a 5 V 74AHCT125 buffer: GPIO23→1A / 1Y→DIN, GPIO18→2A / 2Y→CLK,
-GPIO5→3A / 3Y→CS; enable those channels by tying their active-low OE pins to
-GND. Connect buffer VCC to 5 V, GND to common GND, and decouple with 100 nF.
-Tie unused inputs to a defined level and disable their outputs. Check the
-chosen IC/package datasheet for actual pin numbers. This extra buffer is not
-present in the prototype photos or guaranteed to fit a dedicated mount.
+The ESP32 connects directly to MAX7219 DIN, CLK and CS in this working build.
+The NS4168 is a single I2S DAC/amplifier board.
 
 Use only regulated 5 V input; this socket is not a battery charger. Verify its
 wire polarity and voltage before connection. Do not connect 5 V to ESP32 3V3
@@ -55,10 +48,6 @@ for optional bulk capacitance and power troubleshooting. The supplied photos
 are build references, not evidence that every hidden electrical connection is
 correct. Follow the explicit pin map above.
 
-## Display buffer detail
-
-![74AHCT125 buffer connections](../images/display-buffer.png)
-
-[Editable buffer sheet](../hardware/display-buffer.kicad_sch). Both sheets were exported with KiCad 10.0.6. These are logical module connections, not PCB layouts; symbol terminal numbers are internal identifiers, not physical package pin numbers. The main sheet uses a functional buffer block; the detail sheet shows its supply, enable and bypass connections.
+The two sheets were exported with KiCad. These are logical module connections, not PCB layouts; symbol terminal numbers are internal identifiers, not physical package pin numbers.
 
 To regenerate images, install KiCad and PyMuPDF, then run `python tools/draw_wiring.py --kicad-cli PATH_TO_KICAD_CLI` from the repository root. To regenerate the editable sheets, run `python tools/build_wiring_kicad.py`.
