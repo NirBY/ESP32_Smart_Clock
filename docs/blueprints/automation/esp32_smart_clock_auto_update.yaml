@@ -1,10 +1,9 @@
 blueprint:
   name: ESP32 Smart Clock GitHub Firmware Update Check
   description: >
-    Refresh the ESP32 Smart Clock GitHub release-backed update entity. By
-    default this only creates a notification, because public GitHub release
-    firmware does not include your local secrets.yaml or local YAML edits. Enable
-    install only when you intentionally want to flash the public release binary.
+    Check GitHub firmware releases and show a notification. Select the optional
+    Personalized firmware entity from ESP32 Smart Clock Updates to open HA's
+    Install control. Installation builds locally with your saved configuration.
   domain: automation
   input:
     firmware_update_entity:
@@ -20,14 +19,21 @@ blueprint:
       selector:
         time:
     install_update:
-      name: Install public GitHub firmware automatically
+      name: Install personalized firmware automatically
       description: >
-        Leave off for normal personalized clocks. Turn on only if you understand
-        that the public release binary is not compiled with your local
-        secrets.yaml or local YAML edits.
+        Requires the Personalized firmware entity below. Leave off to choose
+        when to install from the notification. Public binaries are never installed.
       default: false
       selector:
         boolean:
+    install_entity:
+      name: Personalized firmware entity (optional)
+      description: Set up ESP32 Smart Clock Updates, then select its Personalized firmware entity.
+      default: ""
+      selector:
+        entity:
+          domain: update
+          integration: esp32_smart_clock
 
 mode: single
 
@@ -38,6 +44,7 @@ trigger:
 variables:
   install_update: !input install_update
   firmware_entity: !input firmware_update_entity
+  install_entity: !input install_entity
 
 action:
   - service: homeassistant.update_entity
@@ -58,11 +65,11 @@ action:
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ install_update and is_state(firmware_entity, 'on') }}"
+            value_template: "{{ install_update and install_entity != '' and is_state(install_entity, 'on') }}"
         sequence:
           - service: update.install
             target:
-              entity_id: !input firmware_update_entity
+              entity_id: !input install_entity
     default:
       - service: persistent_notification.create
         data:
@@ -72,6 +79,10 @@ action:
             New firmware {{ state_attr(firmware_entity, 'latest_version') }} is available.
             Installed: {{ state_attr(firmware_entity, 'installed_version') }}.
             [Release notes]({{ state_attr(firmware_entity, 'release_url') }}).
-            Update your personalized clock from its local ESPHome YAML to preserve
-            credentials and settings. If HA shows Up-to-date for a development
-            build, a one-time personalized firmware update is needed.
+            {% if install_entity != '' %}
+            [Review and install](/config/updates?more-info-entity-id={{ install_entity }}&more-info-view=info).
+            Your local ESPHome builder preserves your credentials and settings.
+            {% else %}
+            [Set up one-click updates](https://github.com/NirBY/ESP32_Smart_Clock/blob/main/docs/wiki/One-Click-Updates.md).
+            Existing personalized clocks can also update from their local ESPHome YAML.
+            {% endif %}

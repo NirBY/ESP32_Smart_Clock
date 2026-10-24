@@ -1,0 +1,19 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "One-click Smart Clock updates",
+        "description": "Select your clock and its ESPHome Device Builder. Use examples/clock.yaml in the builder first; its secrets.yaml stays local. Enter the builder's own URL (not an HA ingress page).",
+        "data": {
+          "source_entity": "Clock Firmware Update entity",
+          "builder_url": "ESPHome Device Builder URL",
+          "configuration": "Clock YAML filename (for example clock.yaml)",
+          "username": "Builder username (if configured)",
+          "password": "Builder password (if configured)"
+        }
+      }
+    },
+    "error": {"cannot_connect": "Could not verify the clock and managed builder configuration. Check the URL, login, YAML filename, and examples/clock.yaml setup."},
+    "abort": {"already_configured": "This clock is already configured."}
+  }
+}
