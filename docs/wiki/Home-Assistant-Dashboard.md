@@ -27,6 +27,12 @@ easy to find.
 
 ## Dashboard Template
 
+The Display device includes **Display Rotate 180**, a configuration switch for
+a matrix mounted upside down. It rotates all four modules as one screen, applies
+immediately, and remembers the setting after a restart. Leave it off for normal
+mounting. It is also included in the dashboard template. For a second clock,
+use the entity ID assigned by Home Assistant for that clock.
+
 Use `docs/home-assistant-dashboard.yaml` as a ready-to-paste Home Assistant
 dashboard view. It uses only built-in Home Assistant cards:
 

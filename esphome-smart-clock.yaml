@@ -1,7 +1,7 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
-  firmware_version: "0.1.0-beta.15"
+  firmware_version: "0.1.0-beta.16"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -27,18 +27,23 @@ esphome:
     - id: sensor_device
       name: "ESP32 Smart Clock Sensors"
   includes:
+    - src/audio_startup.h
     - src/system_health.h
     - src/clock_timer.h
   on_boot:
-    priority: -100
-    then:
-      - lambda: |-
-          id(time_sync_retry_active) = true;
-          id(boot_low_power_seen) = smart_clock_booted_from_brownout();
-          if (!isnan(id(display_brightness).state)) {
-            id(matrix_display).intensity((uint8_t) id(display_brightness).state);
-          }
-      - component.update: matrix_display
+    - priority: 800
+      then:
+        - lambda: |-
+            smart_clock_park_audio_pins();
+    - priority: -100
+      then:
+        - lambda: |-
+            id(time_sync_retry_active) = true;
+            id(boot_low_power_seen) = smart_clock_booted_from_brownout();
+            if (!isnan(id(display_brightness).state)) {
+              id(matrix_display).intensity((uint8_t) id(display_brightness).state);
+            }
+        - component.update: matrix_display
 
 esp32:
   board: esp32dev
@@ -555,7 +560,7 @@ update:
     icon: "mdi:update"
     source: ${github_release_manifest_url}
     update_interval: 6h
-    disabled_by_default: true
+    disabled_by_default: false
 
 text_sensor:
   - platform: template
@@ -1149,6 +1154,19 @@ select:
 
 switch:
   - platform: template
+    name: "Display Rotate 180"
+    id: display_rotate_180
+    device_id: display_device
+    entity_category: config
+    icon: "mdi:rotate-360"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - component.update: matrix_display
+    turn_off_action:
+      - component.update: matrix_display
+
+  - platform: template
     name: "Show System Alerts"
     id: show_system_alerts
     device_id: system_device
@@ -1238,6 +1256,19 @@ display:
     scroll_delay: 500ms
     update_interval: 80ms
     lambda: |-
+      // Rotate the whole 32x8 canvas, including module order and all screens.
+      it.set_rotation(id(display_rotate_180).state
+          ? display::DISPLAY_ROTATION_180_DEGREES
+          : display::DISPLAY_ROTATION_0_DEGREES);
+      // MAX7219 can grow its buffer for offscreen pixels. Clip before rotation
+      // so scrolling text and sliding pages cannot grow it from the left edge.
+      struct CanvasClip {
+        display::Display &canvas;
+        explicit CanvasClip(display::Display &value) : canvas(value) {
+          canvas.start_clipping(0, 0, 32, 8);
+        }
+        ~CanvasClip() { canvas.end_clipping(); }
+      } canvas_clip(it);
       const uint32_t now_ms = millis();
 
       // Expire every deadline even when a higher-priority screen hides it.
@@ -1331,9 +1362,25 @@ display:
 
         std::string out;
         out.reserve(text.size());
-        for (size_t i = char_count; i > 0; i--) {
+        for (size_t i = char_count; i > 0;) {
           const auto &ch = chars[i - 1];
-          out.append(text, ch.start, ch.len);
+          const uint8_t c = text[ch.start];
+          // Preserve Latin/numeric runs (12:34, 25.7C) within RTL messages.
+          if (ch.len == 1 && c > ' ' && c < 0x7F) {
+            size_t first = i - 1;
+            while (first > 0 && chars[first - 1].len == 1 &&
+                   (uint8_t) text[chars[first - 1].start] > ' ' &&
+                   (uint8_t) text[chars[first - 1].start] < 0x7F) {
+              first--;
+            }
+            for (size_t j = first; j < i; j++) {
+              out.append(text, chars[j].start, chars[j].len);
+            }
+            i = first;
+          } else {
+            out.append(text, ch.start, ch.len);
+            i--;
+          }
         }
         return out;
       };

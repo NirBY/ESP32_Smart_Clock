@@ -159,7 +159,7 @@ void setup() {
   mx.begin();
   mx.control(MD_MAX72XX::INTENSITY, 3); // brightness 0-15
   mx.clear();
-  scrollMixedTextRTL(mx, "שלום...", 45);
+  scrollMixedTextRTL(mx, "HW TEST", 45);
 
   initSensors();
   initI2S();
@@ -196,11 +196,11 @@ void loop() {
 
   String msg;
   if (ahtOk) {
-    msg = "טמפ " + String(tempAht, 1) + "C לחות " + String(humidity, 0) + "%";
+    msg = "TEMP " + String(tempAht, 1) + "C HUM " + String(humidity, 0) + "%";
   } else if (bmpOk) {
-    msg = "טמפ " + String(tempBmp, 1) + "C לחץ " + String(pressure, 0) + "hPa";
+    msg = "TEMP " + String(tempBmp, 1) + "C PRESS " + String(pressure, 0) + "hPa";
   } else {
-    msg = "אין חיישנים";
+    msg = "NO SENSORS";
   }
 
   scrollMixedTextRTL(mx, msg, 45);

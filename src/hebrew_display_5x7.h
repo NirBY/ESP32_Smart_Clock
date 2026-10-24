@@ -157,7 +157,9 @@ void appendCharColumns(MD_MAX72XX& mx, std::vector<uint8_t>& cols, uint16_t ch) 
 
 std::vector<uint8_t> renderMixedTextToColumns(MD_MAX72XX& mx, const String& text) {
   std::vector<uint16_t> logical = utf8ToCodepoints(text);
-  std::vector<uint16_t> visual = visualOrderRTL(logical);
+  bool hasHebrew = false;
+  for (uint16_t ch : logical) hasHebrew |= isHebrew(ch);
+  std::vector<uint16_t> visual = hasHebrew ? visualOrderRTL(logical) : logical;
 
   std::vector<uint8_t> cols;
 
@@ -177,9 +179,10 @@ void drawColumnsWindow(MD_MAX72XX& mx, const std::vector<uint8_t>& cols, int off
     int src = offset + x;
 
     if (src >= 0 && src < (int)cols.size()) {
-      mx.setColumn(x, cols[src]);
+      // MD_MAX72XX column zero is the right edge; our buffer is left-to-right.
+      mx.setColumn(screenCols - 1 - x, cols[src]);
     } else {
-      mx.setColumn(x, 0x00);
+      mx.setColumn(screenCols - 1 - x, 0x00);
     }
   }
 

@@ -1,6 +1,8 @@
 # ESP32 Smart Clock
 
-Release `0.1.0-beta.15` adds a local countdown with a dedicated
+Release `0.1.0-beta.16` adds a persistent 180-degree display rotation switch in Home Assistant, Hebrew display corrections, and early audio-pin initialization. Firmware update entities are enabled by default for new integrations. Startup noise was not reproduced in final cold-start checks; its root cause remains unconfirmed.
+
+Release `0.1.0-beta.15` added a local countdown with a dedicated
 Home Assistant Timer device, configurable countdown/clock display intervals,
 and sliding transitions. See [Timer controls and behavior](docs/wiki/Timer.md).
 ESPHome is pinned to 2026.10.0. The countdown completion melody was installed

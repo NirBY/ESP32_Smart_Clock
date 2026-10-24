@@ -53,6 +53,9 @@ views:
           - entity: select.esp32_smart_clock_time_format
             name: Time format
             icon: mdi:clock-digital
+          - entity: switch.esp32_smart_clock_display_rotate_180
+            name: Rotate display 180°
+            icon: mdi:rotate-360
           - type: section
             label: How long automatic screens stay visible
           - entity: number.esp32_smart_clock_screen_message_seconds
