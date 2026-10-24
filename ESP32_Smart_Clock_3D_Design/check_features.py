@@ -27,5 +27,5 @@ for x in [12.45,145.55]:
  for y in [13.45,46.55]:
   assert filled(body,[x-1.3 if x<79 else x+.2,y+.3 if y<30 else y-5.5,2.1],[1,5,7])>.999
 for pos,size in [([10.95,23,3],[1.5,14,6]),([145.55,23,3],[1.5,14,6]),([30,11.95,3],[90,1.5,6]),([30,46.55,3],[90,1.5,6])]:assert filled(body,pos,size)<.001
-report={'D_relief_mm':1,'D_relief_depth_mm':2.3,'recessed_insert_mm':2.5,'USB_insert_installation':'during print pause at 4.05 mm','integrated_outer_skin_mm':.6,'ESP_standoff_height_mm':5,'USB_side_screws':'M3x8','other_ESP_screws':'M3x5','four_separate_corner_stops':True,'skin_mm':.6,'walls_mm':2.25,'vents_centered':True}
+report={'D_relief_mm':1,'D_relief_depth_mm':2.3,'recessed_insert_mm':2.5,'integrated_outer_skin_mm':.6,'ESP_standoff_height_mm':5,'USB_side_screws':'M3x8','other_ESP_screws':'M3x5','four_separate_corner_stops':True,'skin_mm':.6,'walls_mm':2.25,'vents_centered':True}
 (r/'feature_validation.json').write_text(json.dumps(report,indent=2));print(report)

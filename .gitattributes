@@ -7,4 +7,5 @@
 *.wav binary
 *.zip binary
 *.3mf binary
+*.gif binary
 *.svg text eol=lf

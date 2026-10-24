@@ -26,6 +26,6 @@ for folder in ['stl', 'test-pieces']:
                       'watertight': bool(mesh.is_watertight),
                       'bounds_mm': mesh.bounds.tolist()})
 report = {'revision': 18, 'units': 'mm', 'checks_passed': checks, 'files': files,
-          'physical_validation': '0.6 mm white PLA diffuser tested; latest full assembly and insert-pause workflow untested.'}
+          'physical_validation': 'Creator confirms working printed assembly and white PLA diffuser.'}
 (root / 'release_validation.json').write_text(json.dumps(report, indent=2) + '\n', encoding='utf8')
 print('PASS: all three assembly parts and both fit samples are single watertight solids.')

@@ -1,4 +1,5 @@
 .pio
+.venv/
 .esphome
 secrets.yaml
 .vscode/

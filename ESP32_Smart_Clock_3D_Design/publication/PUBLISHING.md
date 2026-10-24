@@ -20,7 +20,7 @@ Reference: [GitHub release documentation](https://docs.github.com/en/repositorie
 2. Use the title, tags and description in `CREALITY_CLOUD.md`. Select **Original**, creator **NirBY**, and **CC BY-NC-SA 4.0**. Suggested visibility is public and price is free; the creator makes these choices in the upload form.
 3. The submitted covers are the English 4:3 and 3:4 multi-clock feature showcases in the repository's `docs/images/` directory. The listing also includes three real build photos, five enhanced component photos and an exploded CAD view. Display examples are illustrative.
 4. Add `PRINT_GUIDE.pdf`. If the initial form does not offer PDF attachments, the model page's **Add files** flow supports adding it after upload.
-5. Keep the mandatory print-pause instructions and physical-validation status in the listing. Select FFF/FDM. No machine-ready G-code or preconfigured 3MF is provided.
+5. Select FFF/FDM. Include the editable 3MF print configuration and updated print guide.
 6. Preview the model group and its license, then publish when ready.
 
 Official sources checked during preparation: [upload guide](https://cp.crealitycloud.com/help-center/how-to-upload-3d-models?classId=315&source=2), [supported formats](https://www.crealitycloud.com/help-center/Creality-Cloud-supported-formats), [adding a PDF](https://cp.crealitycloud.com/help-center/how-to-upload-model-pdf). The upload guide recommends square cover images and requires model-source and license choices.

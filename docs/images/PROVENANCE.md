@@ -25,3 +25,15 @@ firmware configuration for electrical connections, not AI-retouched PCB labels.
 
 The MCP package requires Home Assistant installation and end-to-end validation.
 Music playback requires an appropriate Home Assistant/Music Assistant source.
+
+## Animated GitHub showcase
+
+`showcase-storyboard.png` was generated with the built-in ImageGen tool from
+`promo-4x3.png`: eight independent English feature slides in the established
+navy/cyan style, preserving the white two-foot clock and short USB plug without
+a cable. Topics: time, countdown, temperature/humidity, custom messages, daily
+alarm, audio, Home Assistant/MCP (setup required), and printable enclosure.
+Every slide is labeled illustrative. The exploded enclosure illustration is
+promotional, not a CAD reference; use the STL renders and guide for assembly.
+`tools/build_showcase.py` extracts the supplied panels and encodes an eight-frame,
+four-seconds-per-frame looping GIF; it does not generate or alter hardware details.

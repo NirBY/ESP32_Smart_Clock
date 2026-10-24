@@ -96,8 +96,8 @@ module lid(){difference(){union(){
  for(x=[66,71.7]){box([x,-1,D-3.2],[1.3,2.2,3.2]);box([x,2.2,D-3.2],[1.3,2.8,3.2]);}
  for(p=lid_pts)hole_z([p[0],p[1],D-.1],screw_d,lid_t+.2);
  for(p=esp_holes){
-  if(p[0]<10){hole_z([p[0],p[1],D-esp_h-.1],3.4,2.7);// Closed outer skin: 0.6 mm. Insert is placed during a print pause at Z=4.05.
-   // Insert pocket print Z=1.05..4.05; 2.9 mm brass rests 0.1 mm below pause plane.
+  if(p[0]<10){hole_z([p[0],p[1],D-esp_h-.1],3.4,2.7);// Closed outer skin: 0.6 mm. Integral rear closure.
+   // Insert pocket print Z=1.05..4.05; nominal 2.9 mm insert pocket.
    hole_z([p[0],p[1],D+lid_t-4.05],insert_d,3.0);
    // Smaller screw-tip cavity leaves a supporting annular seat and closed outer skin.
    hole_z([p[0],p[1],D+lid_t-1.1],3.4,.5);}

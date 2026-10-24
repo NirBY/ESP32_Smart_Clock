@@ -7,7 +7,9 @@ ESPHome is pinned to 2026.10.0. The countdown completion melody was installed
 and audibly approved on the creator's clock. The optional HA MCP script package
 still requires installation and end-to-end MCP testing.
 
-![The actual printed clock](docs/images/clock-real.jpg)
+[![Clock, countdown, sensors, custom text, alarm, audio, Home Assistant and printable enclosure](docs/images/clock-showcase.gif)](docs/wiki/Gallery.md)
+
+*Eight-feature animated showcase. Displays and enclosure illustrations are promotional; [actual build photos](docs/wiki/Gallery.md#actual-printed-clock) and [static slides](docs/images/showcase-storyboard.png) are available. Optional MCP scripts require setup.*
 
 [Full wiring diagram](docs/wiki/Wiring.md) · [Parts and purchase links](docs/wiki/Shopping-List.md) ·
 [Photo and STL gallery](docs/wiki/Gallery.md) · [Home Assistant MCP tools](docs/home-assistant-mcp/README.md)
@@ -16,22 +18,77 @@ ESP32 smart clock project with an 8x32 MAX7219 LED matrix, AHT20/BMP280 indoor s
 
 For normal use, install the **ESPHome smart clock firmware** from `esphome-smart-clock.yaml`.
 
+## AI control with Home Assistant MCP
+
+**MCP runs in Home Assistant, not on the ESP32.** An authenticated AI client calls
+Home Assistant tools; HA sends commands to the clock through the ESPHome API.
+The optional [MCP package](docs/home-assistant-mcp/README.md) is included in this
+repository and adds six tools:
+
+| Tool | What you can do |
+|---|---|
+| Status | Read temperature, humidity, pressure, timer, alarm and settings |
+| Timer | Start a countdown, pause, resume or cancel it |
+| Alarm | Set, enable or disable the daily alarm |
+| Message | Display custom text (up to 100 characters) or clear it |
+| Setting | Change brightness, display intervals, switches and time format |
+| Music | Search/play through Music Assistant; control playback and volume |
+
+### Set up MCP
+
+1. Add the clock to Home Assistant through the **ESPHome integration** first.
+2. Review the entity IDs in [package.yaml](docs/home-assistant-mcp/package.yaml)
+   against your installation. Copy it to `/config/packages/esp32_clock_mcp.yaml`.
+   Enable packages under your existing `homeassistant:` configuration, check
+   configuration and restart HA. The [installation guide](docs/home-assistant-mcp/README.md#install)
+   includes the YAML and an alternative using six individual scripts.
+3. In each of the six scripts, open **Settings → Voice assistants** and expose
+   it to **Assist**.
+4. Add/configure the **Model Context Protocol Server** integration. Select the
+   **Assist** LLM API and keep authentication enabled. Review other entities
+   already exposed to Assist, since they may also be available to the client.
+5. In **Settings → System → AI**, enable the appropriate MCP server and copy
+   its URL into your MCP-compatible AI client. Sign in with Home Assistant using
+   supported authentication. A remotely hosted client needs a reachable HA URL.
+   See the [official HA MCP setup](https://www.home-assistant.io/integrations/mcp_server/).
+6. Reconnect the client, check that the clock tools appear, then ask for status,
+   display a test message and run a short timer. Check HA script traces and the
+   physical clock to confirm execution.
+
+Try: “Show HELLO on the clock”, “Start a seven-minute timer”, “Show the countdown
+for 10 seconds and the time for 2 seconds”, “Set the daily alarm to 07:30”, or
+“What are the room temperature and humidity?”
+
+Music search requires **Music Assistant** and configured music providers. MCP
+does not automatically mirror Google Home timers or add a microphone to the
+clock. This package is supplied for setup and testing; **end-to-end control
+through a live MCP client has not yet been verified**.
+
+## Complete wiring
+
+[![Complete ESP32 clock wiring diagram](docs/images/wiring.png)](docs/images/wiring.png)
+
+[High-resolution PNG](docs/images/wiring.png) · [Scalable SVG](docs/images/wiring.svg) · [Two-sheet PDF](docs/hardware/clock-wiring.pdf) · [Editable KiCad source](docs/hardware/clock-wiring.kicad_sch) · [Pin mapping and assembly notes](docs/wiki/Wiring.md)
+
+Connections use module labels and firmware GPIO numbers, not physical header positions. The diagram includes the display, external sensor, amplifier, speaker, USB-C power and shared ground.
+
 ## Printable enclosure
 
 The [current three-part enclosure](ESP32_Smart_Clock_3D_Design/README.md) includes the final [body](ESP32_Smart_Clock_3D_Design/stl/body.stl), [lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl) and [sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl), editable source, fit samples and an [illustrated assembly guide](ESP32_Smart_Clock_3D_Design/PRINT_GUIDE.pdf). Only the latest design is retained in the working tree.
 
-Print the body in white PLA for the 0.6 mm diffuser. **The lid requires a pause after Z 4.05 mm, using fixed 0.15 mm layers including the first, to install two M3 inserts.** Read the guide before slicing. The complete latest assembly and pause workflow still require a physical fit check. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
+Print the body in white PLA for the tested 0.6 mm diffuser. The creator has printed and assembled the working clock in one continuous print. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
 
 ## Quick Start
 
-1. Install the tested ESPHome version: `python -m pip install "esphome==2026.10.0"`.
+Follow [local setup for Windows, macOS or Linux](docs/wiki/Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
+
+1. Clone the repository and create the ESPHome environment using the linked setup guide (tested ESPHome: `2026.10.0`).
 2. Copy `secrets.example.yaml` to `secrets.yaml`.
 3. Put your Wi-Fi and ESPHome API key in `secrets.yaml`.
 4. Connect the ESP32 with a USB data cable.
 5. Compile and upload:
 
-   ```powershell
-   cd C:\workspace\esp32_smart_clock
+   ```sh
    esphome compile esphome-smart-clock.yaml
    esphome upload esphome-smart-clock.yaml
    ```
@@ -85,11 +142,11 @@ Reference: [ESPHome captive portal documentation](https://esphome.io/components/
 For a personalized clock, update from your local ESPHome YAML. This preserves
 your private `secrets.yaml` and any local config edits:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
-Replace `192.168.1.99` with the clock IP address.
+Replace `CLOCK_DEVICE` with the clock IP address.
 
 The GitHub release update entity checks public release binaries. Those binaries
 are built in GitHub Actions with `secrets.example.yaml`, so they are useful as
@@ -186,46 +243,44 @@ Detailed documentation was moved out of the README:
 
 Open logs over USB:
 
-```powershell
-esphome logs esphome-smart-clock.yaml --device COM5
+```sh
+esphome logs esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 Upload and keep logs open:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device COM5
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 Upload an already compiled firmware over Wi-Fi by IP address:
 
-```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome upload esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 Upload over Wi-Fi by IP address and keep logs open:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
-For the separate Arduino builds, install PlatformIO 6.2.0 in its own environment
-(ESPHome requires PlatformIO 6.1.19 in its environment):
+For the separate Arduino builds, activate the [PlatformIO environment](docs/wiki/Local-Setup.md#separate-platformio-environment), then run:
 
-```powershell
-python -m venv .pio/core
-.pio/core/Scripts/python.exe -m pip install "platformio==6.2.0"
+```sh
+python -m pip install "platformio==6.2.0"
 ```
 
 Build the PlatformIO hardware test:
 
-```powershell
-.pio/core/Scripts/pio.exe run -e esp32dev
+```sh
+pio run -e esp32dev
 ```
 
 Build the Bluetooth speaker firmware:
 
-```powershell
-.pio/core/Scripts/pio.exe run -e bluetooth_speaker
+```sh
+pio run -e bluetooth_speaker
 ```
 
 ## Notes

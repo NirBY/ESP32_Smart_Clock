@@ -1,5 +1,7 @@
 # Audio And Music
 
+Follow [local setup for Windows, macOS or Linux](Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
+
 ## Current Audio Design
 
 Audio playback is configured for low-memory stability on a normal ESP32 without PSRAM. The stable ESPHome path is:
@@ -111,13 +113,11 @@ This is an alternate firmware. It replaces ESPHome, so Home Assistant, Wi-Fi sen
 
 Equivalent terminal commands:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
-# One-time setup; keep Arduino build tools separate from ESPHome.
-python -m venv .pio/core
-.pio/core/Scripts/python.exe -m pip install "platformio==6.2.0"
-.pio/core/Scripts/pio.exe run -e bluetooth_speaker
-.pio/core/Scripts/pio.exe run -e bluetooth_speaker -t upload
+```sh
+# Activate the separate PlatformIO environment from Local setup first.
+python -m pip install "platformio==6.2.0"
+pio run -e bluetooth_speaker
+pio run -e bluetooth_speaker -t upload
 ```
 
 To go back to Home Assistant mode, flash `esphome-smart-clock.yaml` again from ESPHome.

@@ -41,8 +41,12 @@ public binaries replace private Wi-Fi/API configuration; use local ESPHome build
    and retain authentication/admin requirements. Do not turn on every LLM API
    merely to expose this clock. Assist can also expose other entities already
    enabled for Assist; review those before granting an external AI access.
-5. Connect your MCP client to your HA server's `/api/mcp/assist` endpoint using
-   supported HA authentication. Never commit tokens, private hostnames or keys.
+5. Open **Settings > System > AI**, enable the appropriate MCP server and copy
+   the URL shown for the selected API into your MCP client. Use supported HA
+   authentication (including OAuth where supported). A remotely hosted client
+   needs a reachable HA URL, for example through Home Assistant Cloud. Follow
+   the [current HA MCP instructions](https://www.home-assistant.io/integrations/mcp_server/)
+   rather than guessing the endpoint. Never commit tokens, private hostnames or keys.
 6. Reconnect the MCP client and inspect its tool list. Test Status, then a
    temporary screen message, then a short timer. Check HA script traces and
    physical playback. An accepted command is not proof of audible playback.

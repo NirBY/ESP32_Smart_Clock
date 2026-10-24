@@ -98,10 +98,8 @@
   "power_flange_rear_edge_z": 49.35,
   "power_flange_gap_to_lid_mm": 0.35,
   "USB_insert_outer_skin_mm": 0.6,
-  "USB_insert_pause_height_mm": 4.05,
   "USB_insert_pocket_print_z_mm": [
     1.05,
     4.05
-  ],
-  "USB_insert_installation": "during print pause; outside closed"
+  ]
 }

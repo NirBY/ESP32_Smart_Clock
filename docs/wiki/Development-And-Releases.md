@@ -1,15 +1,17 @@
 # Development And Releases
 
-## Windows + VS Code + PlatformIO Install
+Follow [local setup for Windows, macOS or Linux](Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
 
-Use this if you want to work from VS Code on Windows.
+## VS Code + PlatformIO — Windows, macOS and Linux
+
+Use this if you want to work from VS Code on any supported operating system.
 
 Important: PlatformIO installs the PlatformIO firmwares in `platformio.ini`. The normal Home Assistant smart clock firmware is ESPHome, so install it from the VS Code terminal with the `esphome` command.
 
 ### 1. Install Tools
 
-1. Install Python 3 from https://www.python.org/downloads/windows/.
-2. During Python install, enable "Add python.exe to PATH".
+1. Install Python 3.12 or newer from https://www.python.org/downloads/.
+2. Follow [Local setup](Local-Setup.md) to create the separate tool environments. On Windows, enable "Add python.exe to PATH" if offered.
 3. Install VS Code from https://code.visualstudio.com/.
 4. Open VS Code.
 5. Open Extensions.
@@ -17,13 +19,13 @@ Important: PlatformIO installs the PlatformIO firmwares in `platformio.ini`. The
 7. Open a new VS Code terminal: Terminal > New Terminal.
 8. Install ESPHome:
 
-   ```powershell
-   python -m pip install esphome
+   ```sh
+   python -m pip install "esphome==2026.10.0"
    ```
 
 9. Verify the tools:
 
-   ```powershell
+   ```sh
    python --version
    pio --version
    esphome version
@@ -31,7 +33,7 @@ Important: PlatformIO installs the PlatformIO firmwares in `platformio.ini`. The
 
 If `esphome` is not found, use:
 
-```powershell
+```sh
 python -m esphome version
 ```
 
@@ -41,12 +43,12 @@ python -m esphome version
 2. Open:
 
    ```text
-   C:\workspace\esp32_smart_clock
+   your cloned ESP32_Smart_Clock folder
    ```
 
 3. Wait for PlatformIO to load the project.
 4. Connect the ESP32 with a USB data cable.
-5. Check Windows Device Manager if needed. CH340 boards usually appear as a `USB-SERIAL CH340` COM port.
+5. Select the detected USB serial device; see [device names by OS](Local-Setup.md#usb-and-network-device-selection).
 
 ### 3. Install The Normal ESPHome Smart Clock Firmware
 
@@ -55,36 +57,34 @@ This is the recommended first install.
 1. Edit `secrets.yaml` with your Wi-Fi and API key.
 2. In the VS Code terminal, run:
 
-   ```powershell
-   cd C:\workspace\esp32_smart_clock
+   ```sh
    esphome compile esphome-smart-clock.yaml
    esphome upload esphome-smart-clock.yaml
    ```
 
-3. Choose the ESP32 COM port when ESPHome asks.
+3. Choose the ESP32 serial port when ESPHome asks.
 4. If upload fails, hold **BOOT** while upload starts, then release **BOOT** when writing begins.
 5. After flashing, add `ESP32 Smart Clock` in Home Assistant under Settings > Devices & services.
 
 After the first USB install, future ESPHome uploads can usually happen over Wi-Fi:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
+```sh
 esphome upload esphome-smart-clock.yaml
 ```
 
 If name discovery fails but you know the clock's IP address, upload directly:
 
-```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome upload esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 To upload and immediately watch logs from that IP:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
-Replace `192.168.1.99` with the IP from your router, Home Assistant device page,
+Replace `CLOCK_DEVICE` with the IP from your router, Home Assistant device page,
 or ESPHome logs. This still requires a previously flashed ESPHome firmware with
 Wi-Fi and the ESPHome API working.
 
@@ -103,13 +103,11 @@ This is only for checking the hardware wiring. It replaces the ESPHome firmware 
 
 Equivalent terminal commands:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
-# One-time setup; keep Arduino build tools separate from ESPHome.
-python -m venv .pio/core
-.pio/core/Scripts/python.exe -m pip install "platformio==6.2.0"
-.pio/core/Scripts/pio.exe run -e esp32dev
-.pio/core/Scripts/pio.exe run -e esp32dev -t upload
+```sh
+# Activate the separate PlatformIO environment from Local setup first.
+python -m pip install "platformio==6.2.0"
+pio run -e esp32dev
+pio run -e esp32dev -t upload
 pio device monitor -b 115200
 ```
 
@@ -172,8 +170,7 @@ Best use of simulation:
 2. Confirm the code boots and the display/sensor logic is sane.
 3. Build the ESPHome firmware locally with:
 
-   ```powershell
-   cd C:\workspace\esp32_smart_clock
+   ```sh
    esphome compile esphome-smart-clock.yaml
    ```
 
@@ -187,7 +184,7 @@ Wokwi supports ESP32 simulation and many common peripherals, including MAX7219 L
 
 For ESPHome, the better "software-only" check is:
 
-```powershell
+```sh
 esphome config esphome-smart-clock.yaml
 esphome compile esphome-smart-clock.yaml
 ```
@@ -211,7 +208,7 @@ The workflow:
 
 Create a new release:
 
-```powershell
+```sh
 git tag v1.0.0
 git push origin v1.0.0
 ```
@@ -246,8 +243,8 @@ The ESP32 does not poll GitHub and self-update silently. It exposes a normal
 Home Assistant `update` entity. The safe default is notification only. For a
 personalized device, update by IP from your local ESPHome YAML instead:
 
-```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome upload esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 The device uses the raw `firmware-latest` branch instead of

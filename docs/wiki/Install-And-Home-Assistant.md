@@ -1,26 +1,28 @@
 # Install And Home Assistant
 
+Follow [local setup for Windows, macOS or Linux](Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
+
 ## First-Time Install With ESPHome
 
 Use this for the normal smart clock firmware.
 
 ### 1. Install The ESPHome Tool
 
-On Windows, open PowerShell and run:
+After activating the ESPHome environment from [Local setup](Local-Setup.md), run on any OS:
 
-```powershell
-python -m pip install esphome
+```sh
+python -m pip install "esphome==2026.10.0"
 ```
 
 Verify it installed:
 
-```powershell
+```sh
 esphome version
 ```
 
 If `esphome` is not found, try:
 
-```powershell
+```sh
 python -m esphome version
 ```
 
@@ -28,9 +30,8 @@ python -m esphome version
 
 Create your private `secrets.yaml` from the dummy example, then edit it:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
-Copy-Item secrets.example.yaml secrets.yaml
+```sh
+python -c "from pathlib import Path; p=Path('secrets.yaml'); p.exists() or p.write_bytes(Path('secrets.example.yaml').read_bytes())"
 ```
 
 Set your real Wi-Fi name and password:
@@ -56,8 +57,7 @@ Do not commit `secrets.yaml`. It is ignored by git. Only `secrets.example.yaml` 
 
 Run:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
+```sh
 esphome compile esphome-smart-clock.yaml
 esphome upload esphome-smart-clock.yaml
 ```
@@ -79,10 +79,9 @@ If upload fails, hold **BOOT** while upload starts, then release **BOOT** when w
 
 After the first USB flash, ESPHome OTA updates usually work over Wi-Fi.
 
-From PowerShell:
+From your terminal:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
+```sh
 esphome upload esphome-smart-clock.yaml
 ```
 
@@ -91,17 +90,17 @@ ESPHome will upload wirelessly if the device is online. If OTA fails or the devi
 If mDNS discovery does not find `esp32-smart-clock.local`, upload directly to
 the device IP address:
 
-```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome upload esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 To upload and keep the live log open from that IP:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
-Replace `192.168.1.99` with the current IP shown in your router, Home Assistant
+Replace `CLOCK_DEVICE` with the current IP shown in your router, Home Assistant
 device page, or ESPHome logs. This is still an OTA update, so it works only after
 the first USB flash and only when the ESPHome API is reachable on the network.
 
@@ -253,8 +252,8 @@ Why this is notification-only by default:
 
 For normal updates, use:
 
-```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome upload esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 How the GitHub update works:

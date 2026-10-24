@@ -18,6 +18,10 @@ GitHub also provides an interactive mesh preview when opening the
 
 ## Promotional images
 
+![Animated eight-feature showcase](../images/clock-showcase.gif)
+
+[View all eight slides without animation](../images/showcase-storyboard.png).
+
 These are **AI-assisted retouches** of the creator's photographs, not new CAD
 renders or exact electrical references. The original photos above and below
 remain available. Use the [wiring diagram](Wiring.md) for electrical connections.

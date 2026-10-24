@@ -1,8 +1,14 @@
 # ESP32 Smart Clock Wiki
 
+Follow [local setup for Windows, macOS or Linux](Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
+
 This wiki contains the detailed project documentation. Keep `README.md` short and link here for the full setup and troubleshooting notes.
 
 ## Pages
+
+- [Local setup — Windows, macOS and Linux](Local-Setup.md)
+- [Home Assistant MCP](../home-assistant-mcp/README.md)
+- [Wiring diagram](Wiring.md)
 
 - [Hardware And Power](Hardware-And-Power.md)
 - [Install And Home Assistant](Install-And-Home-Assistant.md)
@@ -46,39 +52,38 @@ If this is your first install, start with **ESPHome smart clock**.
 
 Compile ESPHome:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
+```sh
 esphome compile esphome-smart-clock.yaml
 ```
 
 Upload ESPHome:
 
-```powershell
+```sh
 esphome upload esphome-smart-clock.yaml
 ```
 
 Upload ESPHome over Wi-Fi by IP address:
 
-```powershell
-esphome upload esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome upload esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 Open ESPHome logs:
 
-```powershell
-esphome logs esphome-smart-clock.yaml --device COM5
+```sh
+esphome logs esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 Build PlatformIO hardware test:
 
-```powershell
-.pio/core/Scripts/pio.exe run -e esp32dev
+```sh
+pio run -e esp32dev
 ```
 
 Build Bluetooth speaker firmware:
 
-```powershell
-.pio/core/Scripts/pio.exe run -e bluetooth_speaker
+```sh
+pio run -e bluetooth_speaker
 ```
 
 For the isolated PlatformIO environment setup, see [the README](../../README.md#common-commands).

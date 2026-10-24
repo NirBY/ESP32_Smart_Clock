@@ -2,7 +2,7 @@
 
 ![Complete wiring diagram](../images/wiring.png)
 
-[Vector diagram](../images/wiring.svg). Signal assignments are taken from
+[High-resolution PNG](../images/wiring.png) · [Vector diagram](../images/wiring.svg) · [Two-sheet PDF](../hardware/clock-wiring.pdf) · [Editable KiCad schematic](../hardware/clock-wiring.kicad_sch). Signal assignments are taken from
 `esphome-smart-clock.yaml`. Connections below are to **module labels**, not to
 universal physical header positions. The photo wire colors are not a pin map.
 
@@ -48,3 +48,11 @@ use the common external 5 V supply and OTA. See [Hardware and Power](Hardware-An
 for optional bulk capacitance and power troubleshooting. The supplied photos
 are build references, not evidence that every hidden electrical connection is
 correct. Follow the explicit pin map above.
+
+## Display buffer detail
+
+![74AHCT125 buffer connections](../images/display-buffer.png)
+
+[Editable buffer sheet](../hardware/display-buffer.kicad_sch). Both sheets were exported with KiCad 10.0.6. These are logical module connections, not PCB layouts; symbol terminal numbers are internal identifiers, not physical package pin numbers. The main sheet uses a functional buffer block; the detail sheet shows its supply, enable and bypass connections.
+
+To regenerate images, install KiCad and PyMuPDF, then run `python tools/draw_wiring.py --kicad-cli PATH_TO_KICAD_CLI` from the repository root. To regenerate the editable sheets, run `python tools/build_wiring_kicad.py`.

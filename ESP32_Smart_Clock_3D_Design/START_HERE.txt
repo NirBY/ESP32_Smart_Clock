@@ -7,13 +7,10 @@ Units: mm. Scale: 100%. Keep supplied print orientations.
 BODY: white PLA, 0.20 mm first and later layers. At least three solid
 bottom layers form the 0.6 mm LED diffuser. Opaque black PLA blocks light.
 
-LID: fixed 0.15 mm first AND later layers. Pause AFTER completing Z 4.05 mm
-(27 layers), BEFORE Z 4.20 mm. Install two M3 brass inserts, length 2.9 mm,
-in the USB-side posts. Their tops must sit below the paused surface.
-The 0.6 mm rear closures are integral to the lid, not separate parts.
+LID: PLA, supplied orientation. The 0.6 mm rear closures are integral.
 
-Read PRINT_GUIDE.pdf for the exact insert procedure, fasteners and assembly.
-The complete latest assembly and pause workflow are not physically validated.
+Read PRINT_GUIDE.pdf for fasteners and assembly.
+The creator has printed and assembled the working enclosure in one continuous print.
 
 Optional fit samples and editable source are in the Creality Upload and
 GitHub Source packages, or the project repository:

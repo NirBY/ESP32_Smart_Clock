@@ -2,7 +2,6 @@
   "D_relief_mm": 1,
   "D_relief_depth_mm": 2.3,
   "recessed_insert_mm": 2.5,
-  "USB_insert_installation": "during print pause at 4.05 mm",
   "integrated_outer_skin_mm": 0.6,
   "ESP_standoff_height_mm": 5,
   "USB_side_screws": "M3x8",

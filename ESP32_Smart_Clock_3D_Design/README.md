@@ -4,7 +4,7 @@ Rounded, three-part enclosure by **NirBY**, design revision **18**. This folder 
 
 ![Current enclosure, CAD render](previews/cover.png)
 
-**Read before printing the lid:** two M3 inserts must be installed during a print pause. Use **0.15 mm for the first layer and all later layers**; pause **after Z = 4.05 mm, before Z = 4.20 mm**. The finished posts cannot accept those inserts from outside because their rear openings are closed by an integral **0.6 mm** skin.
+The creator has printed and assembled the working clock in one continuous print.
 
 ## Printable files
 
@@ -16,7 +16,7 @@ Rounded, three-part enclosure by **NirBY**, design revision **18**. This folder 
 
 Optional samples: [ESP mounts](test-pieces/esp_gauge.stl) and [USB power opening](test-pieces/power_gauge.stl). These are test pieces, not additional assembly parts.
 
-See the illustrated [print and assembly guide](PRINT_GUIDE.pdf) and and [publishing instructions](publication/PUBLISHING.md).
+See the illustrated [print and assembly guide](PRINT_GUIDE.pdf) and [publishing instructions](publication/PUBLISHING.md).
 
 ## Design
 
@@ -53,7 +53,7 @@ Use **14 M3 brass inserts**, **2.9 mm** long, maximum outside diameter **4.2 mm*
 |---|---:|---|
 | Lid to body | 4 | M3 x 5 with 0.5 mm washer, or M3 x 4 without washer |
 | Sensor cage | 2 | M3 x 6 |
-| ESP USB-side posts | 2 | M3 x 8 with 0.5 mm washer; inserts installed during printing |
+| ESP USB-side posts | 2 | M3 x 8 with 0.5 mm washer |
 | Other ESP posts | 2 | M3 x 5 |
 | Speaker | 2 | M3 x 5 with 0.5 mm washer |
 | Amplifier | 2 | M3 x 5 with 0.5 mm washer; washer outer diameter 7 mm |
@@ -67,20 +67,10 @@ Designed for PLA and Ender-3 V3 KE. Use calibrated filament temperatures, coolin
 | Part | Material | First / later layers | Requirement |
 |---|---|---|---|
 | Body | **White PLA** | 0.20 / 0.20 mm | At least three fully solid bottom layers through the diffuser |
-| Lid and ESP sample | PLA | **0.15 / 0.15 mm, fixed** | Pause after 27 completed layers, at Z 4.05 mm |
+| Lid and ESP sample | PLA | **0.15 / 0.15 mm, fixed** | Keep the supplied orientation |
 | Cage and power sample | PLA | 0.20 / 0.20 mm | Inspect small openings and bridges in slice preview |
 
-Suggested starting point: 0.4 mm nozzle, three perimeters, 20% infill. These are starting settings, not a validated slicer profile. Inspect bridges and overhangs; keep support out of insert pockets, vents and cable passages. Do not auto-rotate the lid, add a raft, or use adaptive layers with the specified pause. The creator successfully tested the 0.6 mm diffuser in white PLA; opaque black PLA blocked the LEDs.
-
-## Mandatory lid pause
-
-1. Print the ESP sample first, in the supplied orientation, with fixed 0.15 mm layers including the first.
-2. Add the printer-supported pause **after completing Z 4.05 mm, before Z 4.20 mm**. This is after 27 layers; verify height, since slicer indices differ.
-3. Heat-set the two 2.9 mm M3 inserts into the open USB-side pockets. The 3.9 mm pilot is smaller than the 4.2 mm insert: do not force it in cold. Keep the part attached to the bed.
-4. Each insert rests on the shoulder at Z 1.05 mm. Its top should be **Z 3.95 mm**, about 0.10 mm below the paused surface. Verify it is below the nozzle path.
-5. Resume printing the narrower screw-access section above the inserts. Install other accessible inserts after printing and cooling.
-
-The pause and heat-setting workflow is geometrically checked but **not physically validated** for this revision. Test the sample before printing the full lid.
+Suggested starting point: 0.4 mm nozzle, three perimeters, 20% infill. Use the supplied editable print configuration. Inspect bridges and overhangs; keep support out of insert pockets, vents and cable passages. The creator successfully tested the 0.6 mm diffuser in white PLA; opaque black PLA blocked the LEDs.
 
 ## Assembly
 
@@ -95,7 +85,7 @@ The pause and heat-setting workflow is geometrically checked but **not physicall
 
 ## Validation and source
 
-The three main STLs are watertight, consistently wound, single connected solids. Checks cover component envelopes, insertion paths, ports, vents, corner stops, D relief and the two 0.6 mm rear closures. JSON reports accompany the source. Exact button contours, spring behavior and flexible wiring still require physical fitting; the complete latest assembly has not been print-verified.
+The creator has successfully printed and assembled this enclosure. The 0.6 mm white PLA diffuser has been tested with the display.
 
 With Python 3.13 recommended, run from the repository root:
 
@@ -120,4 +110,4 @@ Copyright (c) 2026 NirBY. **CC BY-NC-SA 4.0** for the enclosure and accompanying
 
 ## Print configuration
 
-[Ender-3 V3 KE / white PLA native 3MF](print-profiles/ESP32_Clock_Ender3V3KE_PLA_015mm.3mf) includes all three parts, 0.15 mm layers and the required insert pause. [Read settings and limitations](print-profiles/README.md). Slice-checked; not physically printed.
+[Ender-3 V3 KE / white PLA native 3MF](print-profiles/ESP32_Clock_Ender3V3KE_PLA_015mm.3mf) includes all three parts, 0.15 mm layers. [Read settings and limitations](print-profiles/README.md).

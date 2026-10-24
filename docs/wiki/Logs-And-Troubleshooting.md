@@ -1,5 +1,7 @@
 # Logs And Troubleshooting
 
+Follow [local setup for Windows, macOS or Linux](Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
+
 Start with logs. They will tell you if Wi-Fi, I2C sensors, display, or audio are failing.
 
 ## Log Levels
@@ -45,25 +47,24 @@ Important rule: a module cannot be more detailed than the global level. For exam
 
 Connect the ESP32 by USB and run:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
+```sh
 esphome logs esphome-smart-clock.yaml
 ```
 
-If ESPHome asks for a port, choose the ESP32 COM port.
+If ESPHome asks for a port, choose the ESP32 serial port.
 
-You can also force a specific COM port:
+You can also choose a specific serial port:
 
-```powershell
-esphome logs esphome-smart-clock.yaml --device COM5
+```sh
+esphome logs esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
-Replace `COM5` with your real port from Windows Device Manager.
+Replace `CLOCK_DEVICE` with your detected USB device; see the OS-specific examples in [Local setup](Local-Setup.md#usb-and-network-device-selection).
 
 To upload and immediately keep the log open:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device COM5
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 Use this when you need boot logs from the first seconds after flashing.
@@ -72,21 +73,20 @@ Use this when you need boot logs from the first seconds after flashing.
 
 After the device is already online:
 
-```powershell
-cd C:\workspace\esp32_smart_clock
+```sh
 esphome logs esphome-smart-clock.yaml --device OTA
 ```
 
 If OTA discovery does not find the device, use the IP address:
 
-```powershell
-esphome logs esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome logs esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 You can also upload by IP and keep the log open:
 
-```powershell
-esphome run esphome-smart-clock.yaml --device 192.168.1.99
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
 ```
 
 In Home Assistant, you can also open the ESPHome device and use **Logs**.
