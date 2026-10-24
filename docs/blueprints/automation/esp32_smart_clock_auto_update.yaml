@@ -71,6 +71,7 @@ action:
           message: >-
             New firmware {{ state_attr(firmware_entity, 'latest_version') }} is available.
             Installed: {{ state_attr(firmware_entity, 'installed_version') }}.
+            [Open firmware update panel](/config/updates?more-info-entity-id={{ firmware_entity }}&more-info-view=info).
             [Release notes]({{ state_attr(firmware_entity, 'release_url') }}).
             Update your personalized clock from its local ESPHome YAML to preserve
             credentials and settings. If HA shows Up-to-date for a development

@@ -202,6 +202,14 @@ that needs your local Wi-Fi/API secrets.
 The button imports a safe check/notify blueprint. It does not install public
 GitHub firmware unless you explicitly enable that option.
 
+Each update notification includes **Open firmware update panel**, which opens
+the selected clock's update details in your own Home Assistant instance.
+Opening the link does not install firmware. Re-import the blueprint to add
+the link to an existing automation. The panel uses the entity's reported
+status; older development builds may still show **Up-to-date** despite the
+notification. Personalized clocks still need firmware built with their own
+configuration and credentials.
+
 ## Calendar Agenda Announcements
 
 Home Assistant can read today's events from a calendar, print a compact agenda
