@@ -1,9 +1,9 @@
 name: Firmware unit tests
 on:
   push:
-    paths: ['src/clock_timer.h', 'src/alarm_schedule.h', 'tests/**', '.github/workflows/firmware-unit-tests.yml']
+    paths: ['src/clock_timer.h', 'src/alarm_schedule.h', 'tests/**', 'docs/blueprints/**', 'docs/home-assistant-auto-update.yaml', '.github/workflows/firmware-unit-tests.yml']
   pull_request:
-    paths: ['src/clock_timer.h', 'src/alarm_schedule.h', 'tests/**', '.github/workflows/firmware-unit-tests.yml']
+    paths: ['src/clock_timer.h', 'src/alarm_schedule.h', 'tests/**', 'docs/blueprints/**', 'docs/home-assistant-auto-update.yaml', '.github/workflows/firmware-unit-tests.yml']
 permissions:
   contents: read
 jobs:
@@ -13,3 +13,5 @@ jobs:
       - uses: actions/checkout@v6
       - run: g++ -std=c++17 -Wall -Wextra -Werror tests/clock_timer_test.cpp -o /tmp/clock_timer_test && /tmp/clock_timer_test
       - run: g++ -std=c++17 -Wall -Wextra -Werror tests/alarm_schedule_test.cpp -o /tmp/alarm_schedule_test && /tmp/alarm_schedule_test
+      - run: python -m pip install PyYAML Jinja2 awesomeversion
+      - run: python tests/update_notification_test.py

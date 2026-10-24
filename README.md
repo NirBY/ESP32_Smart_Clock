@@ -1,6 +1,6 @@
 # ESP32 Smart Clock
 
-Release `0.1.0-beta.17` adds weekly, monthly, and specific-date alarm schedules, optional inclusive date ranges, and a readable Home Assistant schedule summary with conditional dashboard controls. See the [alarm guide](docs/wiki/Alarm.md).
+Release `0.1.0-beta.18` fixes Home Assistant update notifications for development-version strings such as `beta.15-dev.3`. Re-import the update blueprint to apply the automation fix. The previous release adds weekly, monthly, and specific-date alarm schedules, optional inclusive date ranges, and a readable Home Assistant schedule summary with conditional dashboard controls. See the [alarm guide](docs/wiki/Alarm.md).
 
 Release `0.1.0-beta.15` added a local countdown with a dedicated
 Home Assistant Timer device, configurable countdown/clock display intervals,

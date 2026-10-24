@@ -37,19 +37,28 @@ trigger:
 
 variables:
   install_update: !input install_update
+  firmware_entity: !input firmware_update_entity
 
 action:
   - service: homeassistant.update_entity
     target:
       entity_id: !input firmware_update_entity
   - delay: "00:00:10"
-  - condition: state
-    entity_id: !input firmware_update_entity
-    state: "on"
+  - condition: template
+    value_template: >-
+      {% set installed = state_attr(firmware_entity, 'installed_version') or '' %}
+      {% set latest = state_attr(firmware_entity, 'latest_version') or '' %}
+      {% set base = installed | regex_replace('-dev[.][0-9]+$', '') %}
+      {% set valid = '^[0-9]+[.][0-9]+[.][0-9]+(-beta[.][0-9]+)?$' %}
+      {{ states(firmware_entity) not in ['unknown', 'unavailable'] and
+         ((latest is match(valid) and base is match(valid) and
+           ((version(latest) > version(base)) or
+            (latest == base and installed != base))) or
+          is_state(firmware_entity, 'on')) }}
   - choose:
       - conditions:
           - condition: template
-            value_template: "{{ install_update }}"
+            value_template: "{{ install_update and is_state(firmware_entity, 'on') }}"
         sequence:
           - service: update.install
             target:
@@ -58,8 +67,11 @@ action:
       - service: persistent_notification.create
         data:
           title: ESP32 Smart Clock firmware update
-          message: >
-            A public GitHub firmware release is available. For a personalized
-            clock, update from your local ESPHome YAML instead so secrets.yaml
-            and local config are preserved. Use
-            `esphome upload esphome-smart-clock.yaml --device <device-ip>`.
+          notification_id: "esp32_clock_update_{{ firmware_entity }}"
+          message: >-
+            New firmware {{ state_attr(firmware_entity, 'latest_version') }} is available.
+            Installed: {{ state_attr(firmware_entity, 'installed_version') }}.
+            [Release notes]({{ state_attr(firmware_entity, 'release_url') }}).
+            Update your personalized clock from its local ESPHome YAML to preserve
+            credentials and settings. If HA shows Up-to-date for a development
+            build, a one-time personalized firmware update is needed.

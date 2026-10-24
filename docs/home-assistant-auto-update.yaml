@@ -1,22 +1,34 @@
 alias: ESP32 smart clock GitHub firmware update check
 description: Check the GitHub release-backed update entity and notify when a public build is available.
+variables:
+  firmware_entity: update.esp32_smart_clock_system_firmware_update
 triggers:
   - trigger: time
     at: "03:15:00"
 actions:
   - action: homeassistant.update_entity
     target:
-      entity_id: update.esp32_smart_clock_firmware_update
+      entity_id: update.esp32_smart_clock_system_firmware_update
   - delay: "00:00:10"
-  - condition: state
-    entity_id: update.esp32_smart_clock_firmware_update
-    state: "on"
+  - condition: template
+    value_template: >-
+      {% set installed = state_attr(firmware_entity, 'installed_version') or '' %}
+      {% set latest = state_attr(firmware_entity, 'latest_version') or '' %}
+      {% set base = installed | regex_replace('-dev[.][0-9]+$', '') %}
+      {% set valid = '^[0-9]+[.][0-9]+[.][0-9]+(-beta[.][0-9]+)?$' %}
+      {{ states(firmware_entity) not in ['unknown', 'unavailable'] and
+         ((latest is match(valid) and base is match(valid) and
+           ((version(latest) > version(base)) or
+            (latest == base and installed != base))) or
+          is_state(firmware_entity, 'on')) }}
   - action: persistent_notification.create
     data:
       title: ESP32 smart clock firmware update
-      message: >
-        A public GitHub firmware release is available. For a personalized clock,
-        update from your local ESPHome YAML instead so secrets.yaml and local
-        config are preserved. Use `esphome upload esphome-smart-clock.yaml
-        --device <device-ip>`.
+      notification_id: "esp32_clock_update_{{ firmware_entity }}"
+      message: >-
+        New firmware {{ state_attr(firmware_entity, 'latest_version') }} is available.
+        Installed: {{ state_attr(firmware_entity, 'installed_version') }}.
+        [Release notes]({{ state_attr(firmware_entity, 'release_url') }}).
+        Update your personalized clock from its local ESPHome YAML to preserve
+        credentials and settings.
 mode: single
