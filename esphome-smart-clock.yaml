@@ -1,7 +1,7 @@
 substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
-  firmware_version: "0.1.0-beta.16"
+  firmware_version: "0.1.0-beta.17"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -30,6 +30,7 @@ esphome:
     - src/audio_startup.h
     - src/system_health.h
     - src/clock_timer.h
+    - src/alarm_schedule.h
   on_boot:
     - priority: 800
       then:
@@ -428,10 +429,24 @@ time:
               condition:
                 lambda: |-
                   auto now = id(ntp_time).now();
-                  return now.is_valid()
+                  const auto schedule = smart_clock::AlarmSchedule{
+                    id(alarm_schedule_mode).current_option().str(),
+                    (unsigned(id(alarm_sunday).state) << 0) | (unsigned(id(alarm_monday).state) << 1) | (unsigned(id(alarm_tuesday).state) << 2) | (unsigned(id(alarm_wednesday).state) << 3) | (unsigned(id(alarm_thursday).state) << 4) | (unsigned(id(alarm_friday).state) << 5) | (unsigned(id(alarm_saturday).state) << 6),
+                    int(id(alarm_month_day).state),
+                    (id(alarm_date).has_state() ? (int(id(alarm_date).year)*10000 + int(id(alarm_date).month)*100 + int(id(alarm_date).day)) : 0),
+                    (id(alarm_start_date).has_state() ? (int(id(alarm_start_date).year)*10000 + int(id(alarm_start_date).month)*100 + int(id(alarm_start_date).day)) : 0),
+                    (id(alarm_end_date).has_state() ? (int(id(alarm_end_date).year)*10000 + int(id(alarm_end_date).month)*100 + int(id(alarm_end_date).day)) : 0),
+                    id(alarm_date_range_enabled).state};
+                  static int last_fired_date = 0;
+                  const int today = now.year*10000 + now.month*100 + now.day_of_month;
+                  const bool due = now.is_valid()
+                    && schedule.matches(today, now.day_of_week)
+                    && today != last_fired_date
                     && id(alarm_enabled).state
                     && now.hour == (int) id(alarm_hour).state
                     && now.minute == (int) id(alarm_minute).state;
+                  if (due) last_fired_date = today;
+                  return due;
               then:
                 - script.execute: alarm_triggered
       - seconds: 0
@@ -563,6 +578,24 @@ update:
     disabled_by_default: false
 
 text_sensor:
+  - platform: template
+    name: "Alarm Schedule Summary"
+    id: alarm_schedule_summary
+    device_id: alarm_device
+    update_interval: 1s
+    lambda: |-
+      const auto schedule = smart_clock::AlarmSchedule{
+        id(alarm_schedule_mode).current_option().str(),
+        (unsigned(id(alarm_sunday).state) << 0) | (unsigned(id(alarm_monday).state) << 1) | (unsigned(id(alarm_tuesday).state) << 2) | (unsigned(id(alarm_wednesday).state) << 3) | (unsigned(id(alarm_thursday).state) << 4) | (unsigned(id(alarm_friday).state) << 5) | (unsigned(id(alarm_saturday).state) << 6),
+        int(id(alarm_month_day).state),
+        (id(alarm_date).has_state() ? (int(id(alarm_date).year)*10000 + int(id(alarm_date).month)*100 + int(id(alarm_date).day)) : 0),
+        (id(alarm_start_date).has_state() ? (int(id(alarm_start_date).year)*10000 + int(id(alarm_start_date).month)*100 + int(id(alarm_start_date).day)) : 0),
+        (id(alarm_end_date).has_state() ? (int(id(alarm_end_date).year)*10000 + int(id(alarm_end_date).month)*100 + int(id(alarm_end_date).day)) : 0),
+        id(alarm_date_range_enabled).state};
+      char time[8];
+      snprintf(time, sizeof(time), "%02d:%02d", int(id(alarm_hour).state), int(id(alarm_minute).state));
+      return std::string(id(alarm_enabled).state ? "On | " : "Off | ") + time + " | " + schedule.description();
+
   - platform: template
     name: "Timer State"
     id: timer_state
@@ -850,6 +883,17 @@ button:
 
 number:
   - platform: template
+    name: "Alarm Day of Month"
+    id: alarm_month_day
+    device_id: alarm_device
+    optimistic: true
+    restore_value: true
+    min_value: 1
+    max_value: 31
+    step: 1
+    initial_value: 1
+    mode: box
+  - platform: template
     name: "Timer Display Seconds"
     id: timer_display_seconds
     device_id: timer_device
@@ -1136,6 +1180,18 @@ number:
 
 select:
   - platform: template
+    name: "Alarm Schedule"
+    id: alarm_schedule_mode
+    device_id: alarm_device
+    optimistic: true
+    restore_value: true
+    initial_option: "Every day"
+    options:
+      - "Every day"
+      - "Weekly"
+      - "Monthly"
+      - "Specific date"
+  - platform: template
     name: "Time Format"
     id: time_format
     device_id: display_device
@@ -1153,6 +1209,62 @@ select:
       - component.update: matrix_display
 
 switch:
+  - platform: template
+    name: "Limit Alarm to Date Range"
+    id: alarm_date_range_enabled
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Saturday"
+    id: alarm_saturday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Friday"
+    id: alarm_friday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Thursday"
+    id: alarm_thursday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Wednesday"
+    id: alarm_wednesday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Tuesday"
+    id: alarm_tuesday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Monday"
+    id: alarm_monday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
+  - platform: template
+    name: "Sunday"
+    id: alarm_sunday
+    device_id: alarm_device
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+
   - platform: template
     name: "Display Rotate 180"
     id: display_rotate_180
@@ -2188,3 +2300,26 @@ media_player:
       format: WAV
       sample_rate: 16000
       num_channels: 1
+
+datetime:
+  - platform: template
+    type: date
+    name: "Alarm Date"
+    id: alarm_date
+    device_id: alarm_device
+    optimistic: true
+    restore_value: true
+  - platform: template
+    type: date
+    name: "Alarm Start Date"
+    id: alarm_start_date
+    device_id: alarm_device
+    optimistic: true
+    restore_value: true
+  - platform: template
+    type: date
+    name: "Alarm End Date"
+    id: alarm_end_date
+    device_id: alarm_device
+    optimistic: true
+    restore_value: true

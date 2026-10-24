@@ -1,6 +1,6 @@
 # ESP32 Smart Clock
 
-Release `0.1.0-beta.16` adds a persistent 180-degree display rotation switch in Home Assistant, Hebrew display corrections, and early audio-pin initialization. Firmware update entities are enabled by default for new integrations. Startup noise was not reproduced in final cold-start checks; its root cause remains unconfirmed.
+Release `0.1.0-beta.17` adds weekly, monthly, and specific-date alarm schedules, optional inclusive date ranges, and a readable Home Assistant schedule summary with conditional dashboard controls. See the [alarm guide](docs/wiki/Alarm.md).
 
 Release `0.1.0-beta.15` added a local countdown with a dedicated
 Home Assistant Timer device, configurable countdown/clock display intervals,
@@ -31,7 +31,7 @@ repository and adds six tools:
 |---|---|
 | Status | Read temperature, humidity, pressure, timer, alarm and settings |
 | Timer | Start a countdown, pause, resume or cancel it |
-| Alarm | Set, enable or disable the daily alarm |
+| Alarm | Daily, weekly, monthly or specific-date schedules, with optional date limits; [alarm guide](docs/wiki/Alarm.md) |
 | Message | Display custom text (up to 100 characters) or clear it |
 | Setting | Change brightness, display intervals, switches and time format |
 | Music | Search/play through Music Assistant; control playback and volume |

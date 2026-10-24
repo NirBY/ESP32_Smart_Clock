@@ -82,12 +82,69 @@ views:
         entities:
           - entity: switch.esp32_smart_clock_alarm_enabled
             name: Enabled
+          - entity: sensor.esp32_smart_clock_alarm_schedule_summary
+            name: Schedule summary
+          - entity: select.esp32_smart_clock_alarm_schedule
+            name: Repeat
           - entity: number.esp32_smart_clock_alarm_hour
             name: Hour
           - entity: number.esp32_smart_clock_alarm_minute
             name: Minute
           - entity: number.esp32_smart_clock_alarm_message_seconds
             name: Message seconds
+          - entity: switch.esp32_smart_clock_limit_alarm_to_date_range
+            name: Limit to date range
+
+      - type: conditional
+        conditions:
+          - entity: select.esp32_smart_clock_alarm_schedule
+            state: Weekly
+        card:
+          type: entities
+          title: Repeat on these days
+          show_header_toggle: false
+          entities:
+            - switch.esp32_smart_clock_sunday
+            - switch.esp32_smart_clock_monday
+            - switch.esp32_smart_clock_tuesday
+            - switch.esp32_smart_clock_wednesday
+            - switch.esp32_smart_clock_thursday
+            - switch.esp32_smart_clock_friday
+            - switch.esp32_smart_clock_saturday
+
+      - type: conditional
+        conditions:
+          - entity: select.esp32_smart_clock_alarm_schedule
+            state: Monthly
+        card:
+          type: entities
+          title: Day of each month
+          entities:
+            - entity: number.esp32_smart_clock_alarm_day_of_month
+              name: Day (months without this day are skipped)
+
+      - type: conditional
+        conditions:
+          - entity: select.esp32_smart_clock_alarm_schedule
+            state: Specific date
+        card:
+          type: entities
+          title: Choose the alarm date
+          entities:
+            - date.esp32_smart_clock_alarm_date
+
+      - type: conditional
+        conditions:
+          - entity: switch.esp32_smart_clock_limit_alarm_to_date_range
+            state: "on"
+        card:
+          type: entities
+          title: Active dates (inclusive)
+          entities:
+            - entity: date.esp32_smart_clock_alarm_start_date
+              name: From
+            - entity: date.esp32_smart_clock_alarm_end_date
+              name: Through
 
       - type: markdown
         content: >
