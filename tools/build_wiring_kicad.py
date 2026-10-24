@@ -49,13 +49,11 @@ esp = module('U1','ESP32 USB-C',24,40,43,132,[
     ('GPIO23','R',10),('GPIO18','R',20),('GPIO5','R',30),
     ('GPIO21','R',60),('GPIO22','R',70),
     ('GPIO25','R',100),('GPIO26','R',110),('GPIO27','R',120),
-    ('5V / VIN','L',100),('GND','L',110),('3V3','L',120)])
+    ('5V / VIN','L',100),('GND','L',110),('3V3','R',127)])
 module('J2','Onboard USB-C',29,80,33,13,[])
 text(45.5,86,'PC: data + power',1.7)
-power = module('J1','USB-C power socket',24,183,43,15,[
-    ('+5V','R',4),('GND','R',12)])
-net(power['+5V'],'+5V',False)
-net(power['GND'],'GND',False)
+power = module('J1','USB-C power socket',100,220,50,20,[
+    ('+5V','R',5),('GND','R',15)])
 display = module('U3','MAX7219 / INPUT',190,40,48,45,[
     ('DIN','L',10),('CLK','L',20),('CS / LOAD','L',30),
     ('VCC','R',30),('GND','R',40)])
@@ -63,27 +61,38 @@ sensor = module('U4','AHT20 + BMP280',190,96,48,30,[
     ('SDA','L',4),('SCL','L',14),('VCC','R',4),('GND','R',14)])
 amp = module('U5','NS4168 amplifier',190,136,48,50,[
     ('DIN','L',4),('BCL / BCLK','L',14),('LRC / WS','L',24),
-    ('V','L',34),('G','L',44),('SPK+','R',4),('SPK-','R',14)])
+    ('V','R',34),('G','R',44),('SPK+','R',4),('SPK-','R',14)])
 for gpio,d in [('GPIO23','DIN'),('GPIO18','CLK'),('GPIO5','CS / LOAD')]:
     wire(esp[gpio],display[d])
 for gpio,d in [('GPIO21','SDA'),('GPIO22','SCL')]: wire(esp[gpio],sensor[d])
 for gpio,d in [('GPIO25','DIN'),('GPIO26','BCL / BCLK'),('GPIO27','LRC / WS')]: wire(esp[gpio],amp[d])
-for pin,n in [('5V / VIN','+5V'),('GND','GND'),('3V3','3V3')]: net(esp[pin],n)
-for part,pin,n in [(display,'VCC','+5V'),(display,'GND','GND'),(sensor,'VCC','3V3'),(sensor,'GND','GND')]: net(part[pin],n,False)
-net(amp['V'],'+5V'); net(amp['G'],'GND')
+# Visible USB-C supply wiring, with junction dots at each parallel branch.
+net(esp['3V3'],'3V3',False)
+net(sensor['VCC'],'3V3',False)
+for x,ys in [(260,[70,170,200,225]),(275,[80,110,180,210,235])]:
+    for y1,y2 in zip(ys,ys[1:]): wire((x,y1),(x,y2))
+    for y in ys[1:-1]:
+        items.append(f'(junction (at {x} {y}) (diameter 1) (color 0 0 0 0) (uuid {uid("main-junction"+str(x)+str(y))}))')
+wire(power['+5V'],(260,225)); label(220,225,'USB +5V')
+wire(power['GND'],(275,235)); label(220,235,'USB GND')
+wire(display['VCC'],(260,70)); wire(display['GND'],(275,80))
+wire(amp['V'],(260,170)); wire(amp['G'],(275,180))
+wire(sensor['GND'],(275,110))
+for pin,x,y,rail in [('5V / VIN',10,200,260),('GND',5,210,275)]:
+    wire(esp[pin],(x,esp[pin][1])); wire((x,esp[pin][1]),(x,y)); wire((x,y),(rail,y))
 net(amp['SPK+'],'SPK+',False); net(amp['SPK-'],'SPK-',False)
 speaker = module('LS1','Speaker',110,178,38,20,[('+','L',5),('-','L',15)])
 net(speaker['+'],'SPK+');net(speaker['-'],'SPK-')
 text(130, 131, 'I2S AUDIO', 2)
 text(125, 120, 'I2C / 3.3 V', 2)
 text(126, 86, 'DIRECT DISPLAY SIGNALS', 1.8)
-text(130, 203, 'SPK- is an amplifier output. NEVER connect it to GND.', 2.3)
-text(132, 214, 'J1: external regulated 5 V supply. J2: ESP32 programming USB-C.', 2.3)
-text(132, 221, 'All identical net labels connect together. Sensor VCC uses 3V3 only.', 2.1)
-text(132, 228, 'Disconnect external VIN power before powering ESP32 from PC USB.', 2.1)
-text(132, 237, 'Module-level schematic | firmware: esphome-smart-clock.yaml | NirBY', 1.7)
+text(145, 250, 'SPK- is an amplifier output. NEVER connect it to GND.', 2.3)
+text(145, 260, 'J1: external regulated 5 V supply. J2: ESP32 programming USB-C.', 2.3)
+text(145, 268, 'Dots join wires; crossings without dots do not. Sensor VCC uses 3V3 only.', 2.1)
+text(145, 276, 'Disconnect external VIN power before powering ESP32 from PC USB.', 2.1)
+text(145, 285, 'Module-level schematic | firmware: esphome-smart-clock.yaml | NirBY', 1.7)
 
-OUT.write_text(f'(kicad_sch (version 20250114) (generator "clock_wiring_builder") (uuid {rootid}) (paper "User" 270 245) (lib_symbols {"".join(lib)}) {"".join(items)} (sheet_instances (path "/" (page "1"))))',encoding='utf-8')
+OUT.write_text(f'(kicad_sch (version 20250114) (generator "clock_wiring_builder") (uuid {rootid}) (paper "User" 295 292) (lib_symbols {"".join(lib)}) {"".join(items)} (sheet_instances (path "/" (page "1"))))',encoding='utf-8')
 print(OUT)
 
 # Explicit supply distribution: each load is wired directly to the USB supply.
