@@ -1,8 +1,12 @@
 # Full wiring — ESPHome clock
 
+![Direct USB-C supply wiring](../images/power-distribution.png)
+
+USB-C supplies all 5 V loads directly in parallel. The sensor VCC connects only to ESP32 3V3; all grounds share the USB-C return.
+
 ![Complete wiring diagram](../images/wiring.png)
 
-[High-resolution PNG](../images/wiring.png) · [Vector diagram](../images/wiring.svg) · [Two-sheet PDF](../hardware/clock-wiring.pdf) · [Editable KiCad schematic](../hardware/clock-wiring.kicad_sch). Signal assignments are taken from
+[High-resolution PNG](../images/wiring.png) · [Vector diagram](../images/wiring.svg) · [Three-sheet PDF](../hardware/clock-wiring.pdf) · [Editable KiCad schematic](../hardware/clock-wiring.kicad_sch). Signal assignments are taken from
 `esphome-smart-clock.yaml`. Connections below are to **module labels**, not to
 universal physical header positions. The photo wire colors are not a pin map.
 

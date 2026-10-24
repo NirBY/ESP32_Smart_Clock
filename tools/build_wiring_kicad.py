@@ -89,6 +89,37 @@ text(132, 237, 'Module-level schematic | firmware: esphome-smart-clock.yaml | Ni
 OUT.write_text(f'(kicad_sch (version 20250114) (generator "clock_wiring_builder") (uuid {rootid}) (paper "User" 270 245) (lib_symbols {"".join(lib)}) {"".join(items)} (sheet_instances (path "/" (page "1"))))',encoding='utf-8')
 print(OUT)
 
+# Explicit supply distribution: each load is wired directly to the USB supply.
+lib.clear(); items.clear()
+rootid = uid('power-root')
+text(132,10,'USB-C POWER | DIRECT SUPPLY DISTRIBUTION',3.8)
+text(132,18,'All 5 V loads connect in parallel to J1. ESP32 3V3 powers only the sensor.',2.1)
+source=module('J1','USB-C power socket',20,40,48,35,[('+5V','R',10),('GND','R',20)])
+loads=[]
+for ref,name,y in [('U1','ESP32',40),('U3','MAX7219 display',85),('U5','NS4168 amplifier',130)]:
+ pins=[('VIN/5V' if ref=='U1' else 'VCC/5V','L',10),('GND','L',20)]
+ if ref=='U1':pins.append(('3V3','R',25))
+ loads.append(module(ref,name,150,y,48,32,pins))
+sens=module('U4','AHT20 + BMP280',150,180,48,32,[('GND','L',20),('VCC/3V3','R',10)])
+wire(source['+5V'],(90,50));wire(source['GND'],(100,60))
+for x,ys in [(90,[50,95,140]),(100,[60,105,150,200])]:
+ for a,b in zip(ys,ys[1:]):wire((x,a),(x,b))
+ for y in ys:
+  items.append(f'(junction (at {x} {y}) (diameter 1) (color 0 0 0 0) (uuid {uid("junction"+str(x)+str(y))}))')
+for load,y in zip(loads,[40,85,130]):
+ pin=load.get('VIN/5V',load.get('VCC/5V'))
+ wire((90,y+10),pin);wire((100,y+20),load['GND'])
+wire((100,200),sens['GND'])
+wire(loads[0]['3V3'],(235,65));wire((235,65),(235,190));wire((235,190),sens['VCC/3V3'])
+label(90,35,'+5V');wire((90,35),(90,50))
+label(100,42,'GND');wire((100,42),(100,60))
+label(235,90,'3V3 ONLY')
+text(48,88,'Regulated 5 V input',2)
+text(132,223,'Dots mark connected branches. Crossings without dots are NOT connected.',2)
+text(132,231,'Never join +5V and 3V3. Disconnect external VIN before PC USB power.',2)
+OUT=OUT.with_name('power-distribution.kicad_sch')
+OUT.write_text(f'(kicad_sch (version 20250114) (generator "clock_wiring_builder") (uuid {rootid}) (paper "User" 270 245) (lib_symbols {"".join(lib)}) {"".join(items)} (sheet_instances (path "/" (page "1"))))',encoding='utf-8')
+
 # Companion sheet expands the functional buffer shown on the main overview.
 lib.clear(); items.clear()
 rootid = uid('buffer-root')

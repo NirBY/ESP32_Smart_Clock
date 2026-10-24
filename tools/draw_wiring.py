@@ -19,7 +19,7 @@ images = root / 'docs/images'
 with tempfile.TemporaryDirectory() as temporary:
     out = Path(temporary)
     combined = pymupdf.open()
-    for stem, target in [('clock-wiring', 'wiring'), ('display-buffer', 'display-buffer')]:
+    for stem, target in [('power-distribution', 'power-distribution'), ('clock-wiring', 'wiring'), ('display-buffer', 'display-buffer')]:
         source = root / 'docs/hardware' / (stem + '.kicad_sch')
         for fmt in ['pdf', 'svg']:
             destination = out / (stem + '.pdf') if fmt == 'pdf' else out
@@ -32,4 +32,4 @@ with tempfile.TemporaryDirectory() as temporary:
             doc[0].get_pixmap(dpi=300).save(images / (target + '.png'))
     combined.save(root / 'docs/hardware/clock-wiring.pdf')
     combined.close()
-print('Exported two-sheet PDF, vector SVGs and 300 dpi PNGs.')
+print('Exported three-sheet PDF, vector SVGs and 300 dpi PNGs.')

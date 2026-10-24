@@ -66,9 +66,15 @@ through a live MCP client has not yet been verified**.
 
 ## Complete wiring
 
+**Power distribution:** USB-C directly supplies every 5 V load and common ground. Only the sensor VCC uses ESP32 3V3.
+
+![Direct USB-C power distribution](docs/images/power-distribution.png)
+
+**Signal connections:**
+
 [![Complete ESP32 clock wiring diagram](docs/images/wiring.png)](docs/images/wiring.png)
 
-[High-resolution PNG](docs/images/wiring.png) · [Scalable SVG](docs/images/wiring.svg) · [Two-sheet PDF](docs/hardware/clock-wiring.pdf) · [Editable KiCad source](docs/hardware/clock-wiring.kicad_sch) · [Pin mapping and assembly notes](docs/wiki/Wiring.md)
+[High-resolution PNG](docs/images/wiring.png) · [Scalable SVG](docs/images/wiring.svg) · [Three-sheet PDF](docs/hardware/clock-wiring.pdf) · [Editable KiCad source](docs/hardware/clock-wiring.kicad_sch) · [Pin mapping and assembly notes](docs/wiki/Wiring.md)
 
 Connections use module labels and firmware GPIO numbers, not physical header positions. The diagram includes the display, external sensor, amplifier, speaker, USB-C power and shared ground.
 
