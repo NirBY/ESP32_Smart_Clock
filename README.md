@@ -111,6 +111,12 @@ The clock already includes **ESP32 Smart Clock Fallback**, a password-protected
 Wi-Fi hotspot and setup page. No Bluetooth, app, Home Assistant connection, or
 USB cable is needed to change the router name/password.
 
+**Default password for public release firmware:** `CHANGE_ME_FALLBACK_AP_PASSWORD`
+(type it exactly, including underscores). This is an example placeholder, not a
+password generated for each clock. For your own build, replace
+`fallback_ap_password` in your private `secrets.yaml` before flashing. If you
+already flashed a personalized build, use the password you configured there.
+
 1. Power the clock normally. If its configured Wi-Fi network cannot be reached
    (for example, after changing the router password), wait **90 seconds**.
    The fallback hotspot starts automatically; there is no button to press.
