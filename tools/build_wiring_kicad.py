@@ -50,6 +50,12 @@ esp = module('U1','ESP32 USB-C',24,40,43,132,[
     ('GPIO21','R',60),('GPIO22','R',70),
     ('GPIO25','R',100),('GPIO26','R',110),('GPIO27','R',120),
     ('5V / VIN','L',100),('GND','L',110),('3V3','L',120)])
+module('J2','Onboard USB-C',29,80,33,13,[])
+text(45.5,86,'PC: data + power',1.7)
+power = module('J1','USB-C power socket',24,183,43,15,[
+    ('+5V','R',4),('GND','R',12)])
+net(power['+5V'],'+5V',False)
+net(power['GND'],'GND',False)
 buf = module('U2','5 V logic buffer*',100,40,40,38,[
     ('1A','L',10),('2A','L',20),('3A','L',30),
     ('1Y','R',10),('2Y','R',20),('3Y','R',30)])
@@ -75,7 +81,7 @@ text(130, 131, 'I2S AUDIO', 2)
 text(125, 120, 'I2C / 3.3 V', 2)
 text(126, 86, '*74AHCT125: see buffer sheet', 1.8)
 text(130, 203, 'SPK- is an amplifier output. NEVER connect it to GND.', 2.3)
-text(132, 214, 'POWER: regulated USB-C 5 V input + to +5V; input - to GND.', 2.3)
+text(132, 214, 'J1: external regulated 5 V supply. J2: ESP32 programming USB-C.', 2.3)
 text(132, 221, 'All identical net labels connect together. Sensor VCC uses 3V3 only.', 2.1)
 text(132, 228, 'Disconnect external VIN power before powering ESP32 from PC USB.', 2.1)
 text(132, 237, 'Module-level schematic | firmware: esphome-smart-clock.yaml | NirBY', 1.7)

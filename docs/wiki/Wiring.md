@@ -6,6 +6,8 @@
 `esphome-smart-clock.yaml`. Connections below are to **module labels**, not to
 universal physical header positions. The photo wire colors are not a pin map.
 
+**J1** is the separate USB-C power socket: its two wires feed the shared +5V and GND nets. **J2** is the USB-C port already on the ESP32 board, used for programming and USB power. Matching net labels are electrically connected.
+
 | Source | Destination | Connection |
 |---|---|---|
 | Regulated USB-C input +5 V | ESP32 5V/VIN, MAX7219 VCC, NS4168 V | Parallel 5 V supply bus |
