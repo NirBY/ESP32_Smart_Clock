@@ -111,13 +111,6 @@ The clock already includes **ESP32 Smart Clock Fallback**, a password-protected
 Wi-Fi hotspot and setup page. No Bluetooth, app, Home Assistant connection, or
 USB cable is needed to change the router name/password.
 
-**Default hotspot password for the public GitHub firmware:**
-`CHANGE_ME_FALLBACK_AP_PASSWORD` (enter it exactly, including underscores).
-This is the literal password in the public example build—not a prompt to enter
-another value. It only connects you to the clock's fallback hotspot; it is not
-your router password or a Home Assistant login. Personalized builds use their
-own `fallback_ap_password` from `secrets.yaml` instead.
-
 1. Power the clock normally. If its configured Wi-Fi network cannot be reached
    (for example, after changing the router password), wait **90 seconds**.
    The fallback hotspot starts automatically; there is no button to press.
@@ -153,16 +146,6 @@ Keep a copy of your correct local settings. Do not reset or erase the device.
 Reference: [ESPHome captive portal documentation](https://esphome.io/components/captive_portal/).
 
 ## Firmware Updates
-
-For a native Home Assistant **Install** control, use the optional
-**ESP32 Smart Clock Updates** integration and its
-[one-time setup guide](docs/wiki/One-Click-Updates.md). The integration builds
-each GitHub release locally through ESPHome Device Builder, preserving your
-credentials and YAML overrides. The notification blueprint can link directly
-to its **Personalized firmware** update entity.
-
-Existing notification-only users must install the integration and configure a
-managed builder YAML once; re-importing a blueprint alone does not enable installation.
 
 For a personalized clock, update from your local ESPHome YAML. This preserves
 your private `secrets.yaml` and any local config edits:
