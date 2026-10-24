@@ -11,6 +11,9 @@
 ![Enclosure CAD view](../../ESP32_Smart_Clock_3D_Design/previews/cover.png)
 ![Exploded CAD view](../../ESP32_Smart_Clock_3D_Design/previews/exploded.png)
 
+The enclosure opens at the **rear**: the vented rear lid detaches, while the
+front diffuser remains part of the body. These views use the actual STL meshes.
+
 GitHub also provides an interactive mesh preview when opening the
 [body](../../ESP32_Smart_Clock_3D_Design/stl/body.stl),
 [lid](../../ESP32_Smart_Clock_3D_Design/stl/lid.stl), or
@@ -21,6 +24,11 @@ GitHub also provides an interactive mesh preview when opening the
 ![Animated eight-feature showcase](../images/clock-showcase.gif)
 
 [View all eight slides without animation](../images/showcase-storyboard.png).
+
+![Alarm scheduling: weekly, monthly, specific date and optional date range](../images/alarm-schedules.png)
+
+The alarm graphic illustrates alternative settings for one alarm; it is not a
+live Home Assistant screenshot. See the [alarm guide](Alarm.md).
 
 These are **AI-assisted retouches** of the creator's photographs, not new CAD
 renders or exact electrical references. The original photos above and below

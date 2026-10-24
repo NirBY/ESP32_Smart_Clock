@@ -84,7 +84,37 @@ Connections use module labels and firmware GPIO numbers, not physical header pos
 
 The [current three-part enclosure](ESP32_Smart_Clock_3D_Design/README.md) includes the final [body](ESP32_Smart_Clock_3D_Design/stl/body.stl), [lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl) and [sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl), editable source, fit samples and an [illustrated assembly guide](ESP32_Smart_Clock_3D_Design/PRINT_GUIDE.pdf). Only the latest design is retained in the working tree.
 
+**The enclosure opens from the back.** The front diffuser is part of the body;
+remove the vented rear lid to access the electronics.
+
+| Assembled enclosure | Rear lid removed |
+| --- | --- |
+| ![Actual STL geometry: assembled clock](ESP32_Smart_Clock_3D_Design/previews/cover.png) | ![Actual STL geometry: exploded rear-opening enclosure](ESP32_Smart_Clock_3D_Design/previews/exploded.png) |
+
+*CAD views rendered directly from the supplied STL meshes. Open the
+[body](ESP32_Smart_Clock_3D_Design/stl/body.stl),
+[rear lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl), or
+[sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl) on GitHub to rotate
+the actual 3D model.*
+
 Print the body in white PLA for the tested 0.6 mm diffuser. The creator has printed and assembled the working clock in one continuous print. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
+
+## Alarm schedules
+
+Configure one alarm in Home Assistant: every day, selected weekdays, a day of
+each month, or a specific date. Optionally limit it to an inclusive start/end
+date range. The schedule summary shows your choices in readable text.
+
+[![Weekly, monthly and specific-date alarm examples with an optional date range](docs/images/alarm-schedules.png)](docs/wiki/Alarm.md)
+
+*Illustrated examples of the scheduling controls, not a live Home Assistant
+screenshot. Choose one schedule at a time. The
+[example dashboard](docs/home-assistant-dashboard.yaml) shows the relevant
+weekday switches, day-of-month control, or date picker for your selection.*
+
+See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displays
+`ALARM` and sends an event to Home Assistant; use an HA automation for sound or
+other actions.
 
 ## Quick Start
 

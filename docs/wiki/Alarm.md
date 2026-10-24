@@ -4,6 +4,11 @@ The Alarm device in Home Assistant has one configurable alarm. Choose an hour,
 minute, and schedule, then turn **Alarm Enabled** on. Existing alarms continue
 to use **Every day** until you choose another schedule.
 
+![Weekly, monthly, specific-date and date-range scheduling examples](../images/alarm-schedules.png)
+
+*Illustrated controls with example values, not a live Home Assistant screenshot.
+These are alternative configurations of the clock's single alarm.*
+
 | Schedule | What to select | Example |
 | --- | --- | --- |
 | Every day | Hour and minute | Every day at 07:30 |
