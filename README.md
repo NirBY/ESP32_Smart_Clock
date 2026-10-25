@@ -1,6 +1,6 @@
 # ESP32 Smart Clock
 
-Release `0.1.0-beta.18` fixes Home Assistant update notifications for development-version strings such as `beta.15-dev.3`. Re-import the update blueprint to apply the automation fix. The previous release adds weekly, monthly, and specific-date alarm schedules, optional inclusive date ranges, and a readable Home Assistant schedule summary with conditional dashboard controls. See the [alarm guide](docs/wiki/Alarm.md).
+Release `0.1.0-beta.19` uses HA-compatible firmware versions and rejects development suffixes that make HA incorrectly show **Up-to-date**. Clocks running versions such as `beta.15-dev.3` need one personalized update from their local YAML; afterward, HA can correctly compare newer releases and enable **Update**. Public binaries still use example credentials. The blueprint notification links directly to the firmware update panel. Weekly, monthly, and specific-date alarms are covered in the [alarm guide](docs/wiki/Alarm.md).
 
 Release `0.1.0-beta.15` added a local countdown with a dedicated
 Home Assistant Timer device, configurable countdown/clock display intervals,

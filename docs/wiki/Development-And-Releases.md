@@ -1,5 +1,21 @@
 # Development And Releases
 
+## Firmware version format
+
+Use `X.Y.Z` or `X.Y.Z-beta.N` for `firmware_version`. A compile-time check
+rejects other formats. Home Assistant compares the installed and latest
+version strings independently of ESPHome's update-available flag; its parser
+misorders a value such as `0.1.0-beta.15-dev.3` against `0.1.0-beta.19`.
+Do not append development suffixes. Use the device compilation timestamp to
+identify local builds. Increment the beta number for a new published build.
+
+Existing affected clocks require one local, personalized OTA/USB update to a
+canonical release version. The blueprint can notify about an update but cannot
+rewrite the version reported by already-installed firmware. After migration,
+HA enables Update for a newer version and returns to Up-to-date after install.
+The public GitHub binary contains example credentials; continue to build with
+your private configuration when updating a personalized clock.
+
 Follow [local setup for Windows, macOS or Linux](Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
 
 ## VS Code + PlatformIO — Windows, macOS and Linux
