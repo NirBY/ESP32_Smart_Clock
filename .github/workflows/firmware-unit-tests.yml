@@ -1,9 +1,7 @@
 name: Firmware unit tests
 on:
   push:
-    paths: ['src/**', 'esphome-smart-clock.yaml', 'tests/**', 'docs/blueprints/**', 'docs/home-assistant-auto-update.yaml', '.github/workflows/firmware-unit-tests.yml']
   pull_request:
-    paths: ['src/**', 'esphome-smart-clock.yaml', 'tests/**', 'docs/blueprints/**', 'docs/home-assistant-auto-update.yaml', '.github/workflows/firmware-unit-tests.yml']
 permissions:
   contents: read
 jobs:
