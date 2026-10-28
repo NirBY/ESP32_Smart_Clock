@@ -2037,23 +2037,42 @@ display:
         numeric_pixel(x, 5, Color::WHITE);
         numeric_pixel(x + 1, 5, Color::WHITE);
       };
+      // HH:MM:SS uses 3-wide digits so every digit, pair and colon has a gap:
+      // 6 digits (18) + 2 colons (2) + 3 pair gaps... laid out to span the matrix.
+      auto draw_small_digit = [&](int x, int value) {
+        uint8_t rows[7];
+        if (value < 0 || value > 9 || pixel_glyph('0' + value, rows) == 0) {
+          return;
+        }
+        for (int y = 0; y < 7; y++) {
+          for (int col = 0; col < 3; col++) {
+            if (rows[y] & (1 << (2 - col))) {
+              numeric_pixel(x + slide_x + col, y, Color::WHITE);
+            }
+          }
+        }
+      };
       auto draw_clock_hh_mm_ss = [&](int hour, int minute, int second) {
-        draw_digit(0, hour / 10);
-        draw_digit(5, hour % 10);
-        draw_colon(10);
-        draw_digit(12, minute / 10);
-        draw_digit(17, minute % 10);
-        draw_colon(22);
-        draw_digit(23, second / 10);
-        draw_digit(28, second % 10);
+        draw_small_digit(0, hour / 10);
+        draw_small_digit(4, hour % 10);
+        draw_colon(9);
+        draw_small_digit(12, minute / 10);
+        draw_small_digit(16, minute % 10);
+        draw_colon(21);
+        draw_small_digit(24, second / 10);
+        draw_small_digit(28, second % 10);
+      };
+      // Four large digits spread over the full matrix with even 2-column gaps
+      // around the colon and 1 blank margin column on each side.
+      auto draw_large_four = [&](int d0, int d1, int d2, int d3, bool colon_visible) {
+        draw_large_digit(1, d0);
+        draw_large_digit(8, d1);
+        draw_large_colon(15, colon_visible);
+        draw_large_digit(19, d2);
+        draw_large_digit(26, d3);
       };
       auto draw_clock_hh_mm = [&](int hour, int minute, int second) {
-        const bool colon_visible = (second % 2) == 0;
-        draw_large_digit(1, hour / 10);
-        draw_large_digit(7, hour % 10);
-        draw_large_colon(14, colon_visible);
-        draw_large_digit(18, minute / 10);
-        draw_large_digit(24, minute % 10);
+        draw_large_four(hour / 10, hour % 10, minute / 10, minute % 10, (second % 2) == 0);
       };
       auto draw_clock = [&](int hour, int minute, int second) {
         if (id(time_format).current_option() == "HH:MM") {
@@ -2111,11 +2130,7 @@ display:
           if (remaining >= 3600) {
             draw_clock_hh_mm_ss(remaining / 3600, (remaining / 60) % 60, remaining % 60);
           } else {
-            draw_large_digit(1, (remaining / 60) / 10);
-            draw_large_digit(7, (remaining / 60) % 10);
-            draw_large_colon(14, true);
-            draw_large_digit(18, (remaining % 60) / 10);
-            draw_large_digit(24, remaining % 10);
+            draw_large_four((remaining / 60) / 10, (remaining / 60) % 10, (remaining % 60) / 10, remaining % 10, true);
           }
         };
         auto draw_page = [&](bool clock) {
