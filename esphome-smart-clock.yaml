@@ -2059,17 +2059,17 @@ display:
         draw_small_digit(12, minute / 10);
         draw_small_digit(16, minute % 10);
         draw_colon(21);
-        draw_small_digit(24, second / 10);
-        draw_small_digit(28, second % 10);
+        draw_small_digit(25, second / 10);
+        draw_small_digit(29, second % 10);
       };
-      // Four large digits spread over the full matrix with even 2-column gaps
-      // around the colon and 1 blank margin column on each side.
+      // Four large digits fill all 32 columns: 3-column gaps inside each pair
+      // (H H : M M), 2-column gaps around the colon, no blank edge columns.
       auto draw_large_four = [&](int d0, int d1, int d2, int d3, bool colon_visible) {
-        draw_large_digit(1, d0);
+        draw_large_digit(0, d0);
         draw_large_digit(8, d1);
         draw_large_colon(15, colon_visible);
         draw_large_digit(19, d2);
-        draw_large_digit(26, d3);
+        draw_large_digit(27, d3);
       };
       auto draw_clock_hh_mm = [&](int hour, int minute, int second) {
         draw_large_four(hour / 10, hour % 10, minute / 10, minute % 10, (second % 2) == 0);
