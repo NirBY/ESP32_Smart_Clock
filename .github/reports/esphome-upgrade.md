@@ -1,17 +1,18 @@
 # ESPHome Upgrade Verification
 
-- Verified at: 2026-05-09T14:34:12Z
-- Previous tracked ESPHome: 2026.4.2
-- Verified ESPHome: 2026.4.5
-- Commit tested: 9730433d885db44defa3527f37e8c2a969bb2421
+- Verified at: 2026-11-02T12:53:29Z
+- Previous tracked ESPHome: 2026.10.0
+- Verified ESPHome: 2026.10.1
+- Commit tested: ecd1d01719d90fe2cd0987a0dd3e6baeb569ff68
 
 ## Tool Versions
 
 ```text
-Python 3.13.13
-pip 26.1.1 from /opt/hostedtoolcache/Python/3.13.13/x64/lib/python3.13/site-packages/pip (python 3.13)
-PlatformIO Core, version 6.1.19
-Version: 2026.4.5
+Python 3.13.17
+pip 26.2.2 from /opt/hostedtoolcache/Python/3.13.17/x64/lib/python3.13/site-packages/pip (python 3.13)
+PlatformIO Core, version 6.2.0
+PlatformIO Core, version 6.2.0
+Version: 2026.10.1
 ```
 
 ## Result
