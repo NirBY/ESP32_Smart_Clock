@@ -1,5 +1,7 @@
 # ESP32 Smart Clock
 
+Release `0.1.0-beta.22` improves the large HH:MM clock and countdown numerals with an open seven-segment font, removes the internal strokes from zero, and uses single-pixel colon dots to improve readability when LED light blooms at a distance.
+
 Release `0.1.0-beta.19` uses HA-compatible firmware versions and rejects development suffixes that make HA incorrectly show **Up-to-date**. Clocks running versions such as `beta.15-dev.3` need one personalized update from their local YAML; afterward, HA can correctly compare newer releases and enable **Update**. Public binaries still use example credentials. The blueprint notification links directly to the firmware update panel. Weekly, monthly, and specific-date alarms are covered in the [alarm guide](docs/wiki/Alarm.md).
 
 Release `0.1.0-beta.15` added a local countdown with a dedicated
