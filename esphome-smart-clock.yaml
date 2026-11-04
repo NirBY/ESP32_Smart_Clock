@@ -2,7 +2,7 @@ substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
   # HA-compatible version only; development suffixes are rejected at compile time.
-  firmware_version: "0.1.0-beta.19"
+  firmware_version: "0.1.0-beta.22"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -2003,17 +2003,19 @@ display:
       };
       auto draw_large_digit = [&](int x, int value) {
         x += slide_x;
+        // Open seven-segment numerals: single-pixel strokes and no internal
+        // diagonals keep the counters clear when the LEDs bloom at a distance.
         static const uint8_t digits[10][7] = {
-          {0b01110, 0b10001, 0b10011, 0b10101, 0b11001, 0b10001, 0b01110},
-          {0b00100, 0b01100, 0b00100, 0b00100, 0b00100, 0b00100, 0b01110},
-          {0b01110, 0b10001, 0b00001, 0b00010, 0b00100, 0b01000, 0b11111},
-          {0b11110, 0b00001, 0b00001, 0b01110, 0b00001, 0b00001, 0b11110},
-          {0b00010, 0b00110, 0b01010, 0b10010, 0b11111, 0b00010, 0b00010},
-          {0b11111, 0b10000, 0b10000, 0b11110, 0b00001, 0b00001, 0b11110},
-          {0b00110, 0b01000, 0b10000, 0b11110, 0b10001, 0b10001, 0b01110},
-          {0b11111, 0b00001, 0b00010, 0b00100, 0b01000, 0b01000, 0b01000},
+          {0b01110, 0b10001, 0b10001, 0b10001, 0b10001, 0b10001, 0b01110},
+          {0b00001, 0b00001, 0b00001, 0b00001, 0b00001, 0b00001, 0b00001},
+          {0b01110, 0b00001, 0b00001, 0b01110, 0b10000, 0b10000, 0b01110},
+          {0b01110, 0b00001, 0b00001, 0b01110, 0b00001, 0b00001, 0b01110},
+          {0b10001, 0b10001, 0b10001, 0b01110, 0b00001, 0b00001, 0b00001},
+          {0b01110, 0b10000, 0b10000, 0b01110, 0b00001, 0b00001, 0b01110},
+          {0b01110, 0b10000, 0b10000, 0b01110, 0b10001, 0b10001, 0b01110},
+          {0b01110, 0b00001, 0b00001, 0b00001, 0b00001, 0b00001, 0b00001},
           {0b01110, 0b10001, 0b10001, 0b01110, 0b10001, 0b10001, 0b01110},
-          {0b01110, 0b10001, 0b10001, 0b01111, 0b00001, 0b00010, 0b11100},
+          {0b01110, 0b10001, 0b10001, 0b01110, 0b00001, 0b00001, 0b01110},
         };
 
         if (value < 0 || value > 9) {
@@ -2033,9 +2035,7 @@ display:
           return;
         }
         numeric_pixel(x, 2, Color::WHITE);
-        numeric_pixel(x + 1, 2, Color::WHITE);
         numeric_pixel(x, 5, Color::WHITE);
-        numeric_pixel(x + 1, 5, Color::WHITE);
       };
       // HH:MM:SS uses 3-wide digits so every digit, pair and colon has a gap:
       // 6 digits (18) + 2 colons (2) + 3 pair gaps... laid out to span the matrix.
