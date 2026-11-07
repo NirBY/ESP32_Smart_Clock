@@ -31,6 +31,23 @@ Print the body in white PLA for the tested 0.6 mm diffuser. The creator has prin
 
 [Find the enclosure on Creality Cloud](https://www.crealitycloud.com/model-detail/6adbce3bd4b1f991f82d5813).
 
+### Alarm schedules
+
+Configure one alarm in Home Assistant: every day, selected weekdays, a day of
+each month, or a specific date. Optionally limit it to an inclusive start/end
+date range. The schedule summary shows your choices in readable text.
+
+[![Weekly, monthly and specific-date alarm examples with an optional date range](docs/images/alarm-schedules.png)](docs/wiki/Alarm.md)
+
+*Illustrated examples of the scheduling controls, not a live Home Assistant
+screenshot. Choose one schedule at a time. The
+[example dashboard](docs/home-assistant-dashboard.yaml) shows the relevant
+weekday switches, day-of-month control, or date picker for your selection.*
+
+See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displays
+`ALARM`, plays the selected local Alarm Sound, and sends an event to Home
+Assistant for additional automations.
+
 ## Quick Start
 
 1. Download **[Windows setup EXE](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-Windows-x64.exe)** or **[macOS setup DMG](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-macOS.dmg)**. The Mac DMG supports Apple Silicon and Intel.
@@ -114,23 +131,6 @@ Use the [dashboard YAML](docs/home-assistant-dashboard.yaml) and check entity ID
 3. Add the supplied dashboard/card, set your time ranges, and enable **Day / night automatic brightness**. HACS is not required for this manual installation.
 
 See the [dashboard guide](docs/wiki/Home-Assistant-Dashboard.md) for entity names and a standalone card example.
-
-### Alarm schedules
-
-Configure one alarm in Home Assistant: every day, selected weekdays, a day of
-each month, or a specific date. Optionally limit it to an inclusive start/end
-date range. The schedule summary shows your choices in readable text.
-
-[![Weekly, monthly and specific-date alarm examples with an optional date range](docs/images/alarm-schedules.png)](docs/wiki/Alarm.md)
-
-*Illustrated examples of the scheduling controls, not a live Home Assistant
-screenshot. Choose one schedule at a time. The
-[example dashboard](docs/home-assistant-dashboard.yaml) shows the relevant
-weekday switches, day-of-month control, or date picker for your selection.*
-
-See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displays
-`ALARM`, plays the selected local Alarm Sound, and sends an event to Home
-Assistant for additional automations.
 
 ### Firmware Updates
 
