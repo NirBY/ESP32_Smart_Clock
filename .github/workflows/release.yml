@@ -393,6 +393,12 @@ jobs:
           prerelease: ${{ (github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.prerelease) || contains(github.ref_name, '-') }}
           files: release/*
 
+      - name: Describe release download assets
+        if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/label_release_assets.py "${RELEASE_TAG}"
+
       - name: Publish Home Assistant firmware update channel
         if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
         env:
