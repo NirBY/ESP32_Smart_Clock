@@ -2,8 +2,6 @@
 
 An ESP32 clock with an 8x32 LED matrix, environmental sensors, alarms, countdown timers, audio and Home Assistant controls. Build the hardware, print the enclosure, then configure and install your personalized firmware with the guided Windows or macOS app.
 
-## Presentation
-
 [![Clock, countdown, sensors, messages, alarms, audio, Home Assistant and printable enclosure](docs/images/clock-showcase.gif)](docs/wiki/Gallery.md)
 
 *Eight rotating feature slides in the original gallery style. Product illustrations are based on the real printed clock and enclosure geometry; display examples are illustrative. [Actual build photos](docs/wiki/Gallery.md#actual-printed-clock) · [All eight slides](docs/images/showcase-storyboard.png).*
