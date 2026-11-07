@@ -1,21 +1,181 @@
 # ESP32 Smart Clock
 
-An ESP32 smart clock with an 8x32 MAX7219 LED matrix, temperature/humidity/pressure sensors, alarms, countdown timers, audio and Home Assistant controls. Includes wiring diagrams, a printable enclosure and dashboard examples.
+An ESP32 clock with an 8x32 LED matrix, environmental sensors, alarms, countdown timers, audio and Home Assistant controls. Build the hardware, print the enclosure, then configure and install your personalized firmware with the guided Windows or macOS app.
 
-Set up your clock with the guided desktop app: fill in Wi-Fi and Home Assistant settings, find the USB connection, then build and install your personalized firmware. It handles its own software setup, checks for updates, refreshes the USB port when you move the cable, and shows total progress. No separate Python or Java installation is needed. Download the **[Windows setup EXE](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-Windows-x64.exe)** or **[macOS setup DMG](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-macOS.dmg)**. Internet is required for initial setup and firmware tools; see the [installation guide](docs/wiki/Desktop-App.md).
+## Presentation
 
-![Smart Clock desktop setup window](docs/images/desktop-setup.png)
+[![Clock, countdown, sensors, messages, alarms, audio, Home Assistant and printable enclosure](docs/images/clock-showcase.gif)](docs/wiki/Gallery.md)
 
-[![Clock, countdown, sensors, custom text, alarm, audio, Home Assistant and printable enclosure](docs/images/clock-real-showcase.gif)](docs/wiki/Gallery.md)
+*Eight rotating feature slides in the original gallery style. Product illustrations are based on the real printed clock and enclosure geometry; display examples are illustrative. [Actual build photos](docs/wiki/Gallery.md#actual-printed-clock) · [All eight slides](docs/images/showcase-storyboard.png).*
 
-*Twelve rotating feature slides using actual project photographs and the setup app. [View all slides](docs/images/clock-real-storyboard.jpg) or [open the build gallery](docs/wiki/Gallery.md). Features are described alongside the photos; not every display mode has been photographed. Optional MCP scripts require setup and verification.*
+[Wiring guide](docs/wiki/Wiring.md) · [Parts list](docs/wiki/Shopping-List.md) · [Build gallery](docs/wiki/Gallery.md)
 
-[Full wiring diagram](docs/wiki/Wiring.md) · [Parts and purchase links](docs/wiki/Shopping-List.md) ·
-[Photo and STL gallery](docs/wiki/Gallery.md) · [Home Assistant MCP tools](docs/home-assistant-mcp/README.md)
+### Printable enclosure
 
-For normal use, install the **ESPHome smart clock firmware** from `esphome-smart-clock.yaml`.
+The [current three-part enclosure](ESP32_Smart_Clock_3D_Design/README.md) includes the final [body](ESP32_Smart_Clock_3D_Design/stl/body.stl), [lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl) and [sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl), editable source, fit samples and an [illustrated assembly guide](ESP32_Smart_Clock_3D_Design/PRINT_GUIDE.pdf). Only the latest design is retained in the working tree.
 
-## AI control with Home Assistant MCP
+**The enclosure opens from the back.** The front diffuser is part of the body;
+remove the vented rear lid to access the electronics.
+
+| Assembled enclosure | Rear lid removed |
+| --- | --- |
+| ![Actual STL geometry: assembled clock](ESP32_Smart_Clock_3D_Design/previews/cover.png) | ![Actual STL geometry: exploded rear-opening enclosure](ESP32_Smart_Clock_3D_Design/previews/exploded.png) |
+
+*CAD views rendered directly from the supplied STL meshes. Open the
+[body](ESP32_Smart_Clock_3D_Design/stl/body.stl),
+[rear lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl), or
+[sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl) on GitHub to rotate
+the actual 3D model.*
+
+Print the body in white PLA for the tested 0.6 mm diffuser. The creator has printed and assembled the working clock in one continuous print. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
+
+[Find the enclosure on Creality Cloud](https://www.crealitycloud.com/model-detail/6adbce3bd4b1f991f82d5813).
+
+## Quick Start
+
+1. Download **[Windows setup EXE](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-Windows-x64.exe)** or **[macOS setup DMG](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-macOS.dmg)**. The Mac DMG supports Apple Silicon and Intel.
+2. Open the EXE, or open the DMG and then **Smart Clock Setup**. The installer downloads and verifies its own software. No separate Python, Java, Git, Homebrew or Xcode setup is required; Internet is needed for first setup and firmware tools.
+3. Connect the clock with a USB data cable. Enter your 2.4 GHz Wi-Fi details. For a new clock, keep the generated API encryption key and copy it for Home Assistant setup; for an existing clock, use its current key.
+4. Click **Find USB**, **Save & validate**, then **Build & install**. Moving the cable to another port refreshes a disconnected COM/device path automatically. Windows also offers signed driver setup through Windows Update.
+5. Follow the [Home Assistant integration steps](#home-assistant-integration) below. Later updates can use USB or the clock's network address.
+
+![Smart Clock setup window](docs/images/desktop-setup.png)
+
+The app shows estimated progress for the complete build/install process and reaches 100% only after success. Setup retries/resumes interrupted downloads, verifies checksums, and preserves your settings and working installation on failure. Installers are unsigned; Windows or macOS may ask you to approve opening them.
+
+See the [full installation guide](docs/wiki/Desktop-App.md), [driver help](docs/wiki/Desktop-App.md#first-installation), or [manual CLI setup](docs/wiki/Local-Setup.md).
+
+## Hardware Summary and Complete Wiring
+
+- ESP32 30-pin dev board, CH340C, USB-C, HW-394 style board
+- MAX7219 8x32 LED matrix
+- NS4168 I2S Class-D audio amplifier module with speaker
+- AHT20 + BMP280 I2C temperature, humidity, and pressure board
+- 5V 3A USB-C power supply
+
+Main pins:
+
+| Function | ESP32 pin |
+|---|---:|
+| I2C SDA | GPIO21 |
+| I2C SCL | GPIO22 |
+| MAX7219 DIN | GPIO23 |
+| MAX7219 CLK | GPIO18 |
+| MAX7219 CS/LOAD | GPIO5 |
+| I2S DATA | GPIO25 |
+| I2S BCLK | GPIO26 |
+| I2S LRCLK/WS | GPIO27 |
+
+All module grounds must be connected together.
+
+### Complete wiring
+
+**Power distribution:** USB-C directly supplies every 5 V load and common ground. Only the sensor VCC uses ESP32 3V3.
+
+![Direct USB-C power distribution](docs/images/power-distribution.png)
+
+**Signal connections:**
+
+[![Complete ESP32 clock wiring diagram](docs/images/wiring.png)](docs/images/wiring.png)
+
+[High-resolution PNG](docs/images/wiring.png) · [Scalable SVG](docs/images/wiring.svg) · [Two-sheet PDF](docs/hardware/clock-wiring.pdf) · [Editable KiCad source](docs/hardware/clock-wiring.kicad_sch) · [Pin mapping and assembly notes](docs/wiki/Wiring.md)
+
+Connections use module labels and firmware GPIO numbers, not physical header positions. The diagram includes the display, external sensor, amplifier, speaker, USB-C power and shared ground.
+
+## Home Assistant integration
+
+### What to install
+
+| Component | Needed? | Purpose |
+|---|---|---|
+| Home Assistant | Yes | Runs your clock controls and automations |
+| ESPHome integration | Yes; built into Home Assistant | Connects the flashed clock over the local network |
+| ESPHome Device Builder app/add-on | Optional | Edit and compile firmware inside Home Assistant; the desktop installer already handles local builds |
+| HACS | Optional | The clock integration and included brightness card do not require it |
+| Brightness editor card | Optional; included in this repository | Adds a time-range editor to the dashboard; copy the supplied JavaScript file manually |
+| Music Assistant / MCP scripts | Optional | Music search or AI control; each needs separate setup |
+
+### Connect the clock
+
+1. Install the ESPHome clock firmware with the desktop app in Quick Start, then let the clock join your home Wi-Fi. Home Assistant must be able to reach the clock on the local network.
+2. In Home Assistant, open **Settings > Devices & services**. Configure the discovered **ESPHome** clock. If it is absent, choose **Add integration > ESPHome** and enter the clock's IP address (default API port **6053**).
+3. When asked for the encryption key, paste the same **Home Assistant encryption key** used in the desktop setup form (`api_encryption_key` in a manual build). It is different from the Wi-Fi and recovery-hotspot passwords.
+4. Assign an area and open the device. The clock exposes display, timer, alarm, audio, sensor and system controls, organized as logical devices for the same physical clock.
+5. Test a brightness change, check temperature/humidity, then send a short screen message. For clock actions that call Home Assistant, enable **Allow the device to perform Home Assistant actions** in the integration's device options if prompted.
+
+The [official ESPHome integration guide](https://www.home-assistant.io/integrations/esphome/) covers discovery, manual setup and encryption. [ESPHome Device Builder setup](https://esphome.io/install/getting-started/) is available if you prefer to build from Home Assistant.
+
+### Add the dashboard
+
+Use the [dashboard YAML](docs/home-assistant-dashboard.yaml) and check entity IDs against your clock. To enable the included brightness range editor:
+
+1. Copy [smart-clock-brightness-card.js](docs/home-assistant/smart-clock-brightness-card.js) to Home Assistant's `/config/www/` directory.
+2. Add `/local/smart-clock-brightness-card.js?v=1` under **Settings > Dashboards > Resources** as a **JavaScript module** (Advanced mode may need enabling in your profile), then reload the browser.
+3. Add the supplied dashboard/card, set your time ranges, and enable **Day / night automatic brightness**. HACS is not required for this manual installation.
+
+See the [dashboard guide](docs/wiki/Home-Assistant-Dashboard.md) for entity names and a standalone card example.
+
+### Alarm schedules
+
+Configure one alarm in Home Assistant: every day, selected weekdays, a day of
+each month, or a specific date. Optionally limit it to an inclusive start/end
+date range. The schedule summary shows your choices in readable text.
+
+[![Weekly, monthly and specific-date alarm examples with an optional date range](docs/images/alarm-schedules.png)](docs/wiki/Alarm.md)
+
+*Illustrated examples of the scheduling controls, not a live Home Assistant
+screenshot. Choose one schedule at a time. The
+[example dashboard](docs/home-assistant-dashboard.yaml) shows the relevant
+weekday switches, day-of-month control, or date picker for your selection.*
+
+See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displays
+`ALARM`, plays the selected local Alarm Sound, and sends an event to Home
+Assistant for additional automations.
+
+### Firmware Updates
+
+Use **Check for updates** in the desktop app, then **Build & install** to apply the new firmware with your own settings.
+
+For a personalized clock, update from your local ESPHome YAML. This preserves
+your private `secrets.yaml` and any local config edits:
+
+```sh
+esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
+```
+
+Replace `CLOCK_DEVICE` with the clock IP address.
+
+The GitHub release update entity checks public release binaries. Those binaries
+are built in GitHub Actions with `secrets.example.yaml`, so they are useful as
+reference/recovery artifacts but are not the normal update path for a device
+that needs your local Wi-Fi/API secrets.
+
+[![Import ESP32 Smart Clock update automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_auto_update.yaml)
+
+The button imports a safe check/notify blueprint. It does not install public
+GitHub firmware unless you explicitly enable that option.
+
+Each update notification includes **Open firmware update panel**, which opens
+the selected clock's update details in your own Home Assistant instance.
+Opening the link does not install firmware. Re-import the blueprint to add
+the link to an existing automation. The panel uses the entity's reported
+status; older development builds may still show **Up-to-date** despite the
+notification. Personalized clocks still need firmware built with their own
+configuration and credentials.
+
+### Calendar Agenda Announcements
+
+Home Assistant can read today's events from a calendar, print a compact agenda
+on the LED matrix, and optionally speak the same agenda through the clock
+speaker. The automation can run every day at a selected time, from an
+`input_button` helper, or both.
+
+[![Import ESP32 Smart Clock calendar agenda automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_calendar_agenda.yaml)
+
+Create an `input_button` helper if you want a dashboard button, then import the
+blueprint and select your calendar, clock speaker, and ESPHome display action.
+
+### AI control with Home Assistant MCP
 
 **MCP runs in Home Assistant, not on the ESP32.** An authenticated AI client calls
 Home Assistant tools; HA sends commands to the clock through the ESPHome API.
@@ -31,7 +191,7 @@ repository and adds six tools:
 | Setting | Change brightness, display intervals, switches and time format |
 | Music | Search/play through Music Assistant; control playback and volume |
 
-### Set up MCP
+#### Set up MCP
 
 1. Add the clock to Home Assistant through the **ESPHome integration** first.
 2. Review the entity IDs in [package.yaml](docs/home-assistant-mcp/package.yaml)
@@ -61,97 +221,16 @@ does not automatically mirror Google Home timers or add a microphone to the
 clock. This package is supplied for setup and testing; **end-to-end control
 through a live MCP client has not yet been verified**.
 
-## Complete wiring
+## Troubleshooting
 
-**Power distribution:** USB-C directly supplies every 5 V load and common ground. Only the sensor VCC uses ESP32 3V3.
+- **USB missing or stale:** use a data cable, reconnect, then click **Find USB**. A disconnected COM/device selection refreshes automatically. On Windows use **Set up USB drivers** if needed; Mac bridge-driver guidance is in the [desktop guide](docs/wiki/Desktop-App.md).
+- **Upload cannot connect:** close other serial monitors. Hold **BOOT** as upload starts and release it when writing begins.
+- **Brief display flicker:** compare the specified 5 V / 3 A supply and a short cable against the computer USB port or hub; temporarily lower brightness. A supply/cable problem is a possibility, not a confirmed diagnosis for every flicker. Reset/brownout logs and a charger comparison help distinguish causes.
+- **Hourly text:** the default is weekday/date, for example `SAT 07/11`, for 3 seconds. Adjust **Date Message Seconds**. The date uses compact pixel text; unsupported custom characters may use a font fallback.
+- **Home Assistant cannot connect:** check the clock IP, local network reachability and matching API encryption key. Reinstalling with a different key requires updating the integration's key too.
+- **Download or build failed:** keep Internet connected and retry. Existing settings are preserved. See [logs and troubleshooting](docs/wiki/Logs-And-Troubleshooting.md) and [audio troubleshooting](docs/wiki/Audio-And-Music.md).
 
-![Direct USB-C power distribution](docs/images/power-distribution.png)
-
-**Signal connections:**
-
-[![Complete ESP32 clock wiring diagram](docs/images/wiring.png)](docs/images/wiring.png)
-
-[High-resolution PNG](docs/images/wiring.png) · [Scalable SVG](docs/images/wiring.svg) · [Two-sheet PDF](docs/hardware/clock-wiring.pdf) · [Editable KiCad source](docs/hardware/clock-wiring.kicad_sch) · [Pin mapping and assembly notes](docs/wiki/Wiring.md)
-
-Connections use module labels and firmware GPIO numbers, not physical header positions. The diagram includes the display, external sensor, amplifier, speaker, USB-C power and shared ground.
-
-## Printable enclosure
-
-The [current three-part enclosure](ESP32_Smart_Clock_3D_Design/README.md) includes the final [body](ESP32_Smart_Clock_3D_Design/stl/body.stl), [lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl) and [sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl), editable source, fit samples and an [illustrated assembly guide](ESP32_Smart_Clock_3D_Design/PRINT_GUIDE.pdf). Only the latest design is retained in the working tree.
-
-**The enclosure opens from the back.** The front diffuser is part of the body;
-remove the vented rear lid to access the electronics.
-
-| Assembled enclosure | Rear lid removed |
-| --- | --- |
-| ![Actual STL geometry: assembled clock](ESP32_Smart_Clock_3D_Design/previews/cover.png) | ![Actual STL geometry: exploded rear-opening enclosure](ESP32_Smart_Clock_3D_Design/previews/exploded.png) |
-
-*CAD views rendered directly from the supplied STL meshes. Open the
-[body](ESP32_Smart_Clock_3D_Design/stl/body.stl),
-[rear lid](ESP32_Smart_Clock_3D_Design/stl/lid.stl), or
-[sensor cage](ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl) on GitHub to rotate
-the actual 3D model.*
-
-Print the body in white PLA for the tested 0.6 mm diffuser. The creator has printed and assembled the working clock in one continuous print. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
-
-## Alarm schedules
-
-Configure one alarm in Home Assistant: every day, selected weekdays, a day of
-each month, or a specific date. Optionally limit it to an inclusive start/end
-date range. The schedule summary shows your choices in readable text.
-
-[![Weekly, monthly and specific-date alarm examples with an optional date range](docs/images/alarm-schedules.png)](docs/wiki/Alarm.md)
-
-*Illustrated examples of the scheduling controls, not a live Home Assistant
-screenshot. Choose one schedule at a time. The
-[example dashboard](docs/home-assistant-dashboard.yaml) shows the relevant
-weekday switches, day-of-month control, or date picker for your selection.*
-
-See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displays
-`ALARM` and sends an event to Home Assistant; use an HA automation for sound or
-other actions.
-
-## Quick Start
-
-The desktop installer is available from the latest release. It provides a Wi-Fi
-and Home Assistant settings form, USB bridge detection, Windows driver setup,
-firmware release checks and personalized compilation/upload. The Windows package
-includes Python, ESPHome and Git; no separate Python or Java installation is
-required. The tiny Windows setup EXE downloads and verifies its runtime on first
-use; Internet is also needed for firmware tools and Windows Update drivers.
-See the [desktop installation and update guide](docs/wiki/Desktop-App.md) for
-step-by-step usage and [developer build notes](desktop/README.md). The release
-workflow builds a **small Windows x64 online setup EXE** (about 23 KB), its pinned
-runtime asset, and **one universal macOS DMG online installer** (about 210 KB,
-automatically selecting Apple Silicon or Intel),
-plus SHA-256 files. Windows setup shows progress,
-retries/resumes interrupted downloads, checks SHA-256 before installation, and
-keeps the installed runtime and private settings safe when setup fails. Users do
-not extract folders or install Python/Java. Find USB and automatic scanning replace a disconnected COM/device path after
-moving the USB cable; there is no need to clear the old port. Connected choices
-and network targets are preserved. Build & install shows estimated progress for
-the whole process, reaching 100% only after success. Release checks compare
-packaged app/firmware files with the release source and exercise installation
-on Windows, Apple Silicon and Intel Macs before publishing.
-
-Follow [local setup for Windows, macOS or Linux](docs/wiki/Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
-
-1. Clone the repository and create the ESPHome environment using the linked setup guide (tested ESPHome: `2026.10.1`).
-2. Copy `secrets.example.yaml` to `secrets.yaml`.
-3. Put your Wi-Fi and ESPHome API key in `secrets.yaml`.
-4. Connect the ESP32 with a USB data cable.
-5. Compile and upload:
-
-   ```sh
-   esphome compile esphome-smart-clock.yaml
-   esphome upload esphome-smart-clock.yaml
-   ```
-
-6. Add the discovered ESPHome device in Home Assistant.
-
-If upload fails, hold **BOOT** while upload starts, then release **BOOT** when writing begins.
-
-## Recover Wi-Fi from your phone
+### Recover Wi-Fi from your phone
 
 The clock already includes **ESP32 Smart Clock Fallback**, a password-protected
 Wi-Fi hotspot and setup page. No Bluetooth, app, Home Assistant connection, or
@@ -197,69 +276,6 @@ Keep a copy of your correct local settings. Do not reset or erase the device.
 
 Reference: [ESPHome captive portal documentation](https://esphome.io/components/captive_portal/).
 
-## Firmware Updates
-
-For a personalized clock, update from your local ESPHome YAML. This preserves
-your private `secrets.yaml` and any local config edits:
-
-```sh
-esphome run esphome-smart-clock.yaml --device CLOCK_DEVICE
-```
-
-Replace `CLOCK_DEVICE` with the clock IP address.
-
-The GitHub release update entity checks public release binaries. Those binaries
-are built in GitHub Actions with `secrets.example.yaml`, so they are useful as
-reference/recovery artifacts but are not the normal update path for a device
-that needs your local Wi-Fi/API secrets.
-
-[![Import ESP32 Smart Clock update automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_auto_update.yaml)
-
-The button imports a safe check/notify blueprint. It does not install public
-GitHub firmware unless you explicitly enable that option.
-
-Each update notification includes **Open firmware update panel**, which opens
-the selected clock's update details in your own Home Assistant instance.
-Opening the link does not install firmware. Re-import the blueprint to add
-the link to an existing automation. The panel uses the entity's reported
-status; older development builds may still show **Up-to-date** despite the
-notification. Personalized clocks still need firmware built with their own
-configuration and credentials.
-
-## Calendar Agenda Announcements
-
-Home Assistant can read today's events from a calendar, print a compact agenda
-on the LED matrix, and optionally speak the same agenda through the clock
-speaker. The automation can run every day at a selected time, from an
-`input_button` helper, or both.
-
-[![Import ESP32 Smart Clock calendar agenda automation](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2FNirBY%2FESP32_Smart_Clock%2Fblob%2Fmain%2Fdocs%2Fblueprints%2Fautomation%2Fesp32_smart_clock_calendar_agenda.yaml)
-
-Create an `input_button` helper if you want a dashboard button, then import the
-blueprint and select your calendar, clock speaker, and ESPHome display action.
-
-## Tested software versions
-
-Download the enclosure on [Creality Cloud](https://www.crealitycloud.com/model-detail/6adbce3bd4b1f991f82d5813).
-The listing was submitted on October 24, 2026 and is subject to platform review.
-
-| Component | Version |
-|---|---|
-| Clock firmware | 0.1.0-beta.15 (tested locally as beta.15-dev.3) |
-| ESPHome | 2026.10.1 (see `ESPHOME_VERSION`) |
-| PlatformIO Core (ESPHome build environment) | 6.2.0 |
-| PlatformIO Core (separate Arduino builds) | 6.2.0 |
-| Arduino PlatformIO platform | pioarduino 55.03.312-1 |
-| Arduino-ESP32 / ESP-IDF | 3.3.12 / 5.5.5 |
-| ESP32-A2DP | 1.8.11 |
-| Adafruit AHTX0 / BMP280 / GFX | 2.0.6 / 3.0.0 / 1.13.0 |
-| MD_MAX72XX | 3.5.1 |
-
-The ESPHome firmware uses its own supported ESP-IDF toolchain. The Arduino
-platform above is used for the separate hardware-test and Bluetooth builds.
-Release CI installs the exact version in `ESPHOME_VERSION` and builds with
-`secrets.example.yaml`; private local firmware binaries must not be published.
-
 ## Firmware Options
 
 | Firmware | Use for | Home Assistant | Wi-Fi | Bluetooth music |
@@ -269,29 +285,6 @@ Release CI installs the exact version in `ESPHOME_VERSION` and builds with
 | PlatformIO hardware test | Checking wiring and modules | No | No | No |
 
 The ESP32 runs one firmware at a time. Flashing the Bluetooth speaker firmware replaces ESPHome. Flashing ESPHome again replaces the Bluetooth speaker firmware.
-
-## Hardware Summary
-
-- ESP32 30-pin dev board, CH340C, USB-C, HW-394 style board
-- MAX7219 8x32 LED matrix
-- NS4168 I2S Class-D audio amplifier module with speaker
-- AHT20 + BMP280 I2C temperature, humidity, and pressure board
-- 5V 3A USB-C power supply
-
-Main pins:
-
-| Function | ESP32 pin |
-|---|---:|
-| I2C SDA | GPIO21 |
-| I2C SCL | GPIO22 |
-| MAX7219 DIN | GPIO23 |
-| MAX7219 CLK | GPIO18 |
-| MAX7219 CS/LOAD | GPIO5 |
-| I2S DATA | GPIO25 |
-| I2S BCLK | GPIO26 |
-| I2S LRCLK/WS | GPIO27 |
-
-All module grounds must be connected together.
 
 ## Wiki
 

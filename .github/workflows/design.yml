@@ -25,7 +25,7 @@ jobs:
       - run: python -m pip install -r ESP32_Smart_Clock_3D_Design/requirements.txt
       - run: python ESP32_Smart_Clock_3D_Design/validate_all.py
       - run: python ESP32_Smart_Clock_3D_Design/package_release.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7.0.2
         with:
           name: esp32-clock-enclosure-v18
           path: ESP32_Smart_Clock_3D_Design/dist/*
