@@ -37,11 +37,11 @@ def extract(archive, destination, prefix='', go_sdk=False):
 
 def ensure_writer():
     TOOLS.mkdir(parents=True, exist_ok=True)
-    pins = json.loads((ROOT / 'desktop/dmg_tools.json').read_text())
+    pins = json.loads((ROOT / 'desktop/dmg_tools.json').read_text(encoding='utf-8'))
     output = TOOLS / 'smartclock-dmg-writer.exe'
-    fingerprint = hashlib.sha256((json.dumps(pins, sort_keys=True) + (ROOT / 'desktop/dmg_writer_main.go').read_text() + 'windows-posix-modes-v1').encode()).hexdigest()
+    fingerprint = hashlib.sha256((json.dumps(pins, sort_keys=True) + (ROOT / 'desktop/dmg_writer_main.go').read_text(encoding='utf-8') + 'windows-posix-modes-v1').encode()).hexdigest()
     marker = TOOLS / 'writer-built.txt'
-    if output.exists() and marker.exists() and marker.read_text() == fingerprint:
+    if output.exists() and marker.exists() and marker.read_text(encoding='utf-8') == fingerprint:
         return output
     go_zip = TOOLS / 'go-sdk.zip'
     fetch(pins['go_url'], go_zip, pins['go_sha256'])
@@ -59,7 +59,7 @@ def ensure_writer():
     # Windows has no Unix execute bits. Explicitly record correct Mac modes in
     # the HFS catalog instead of Go's synthetic Windows 0666/0777 values.
     implementation = source_dir / 'dmg.go'
-    code = implementation.read_text()
+    code = implementation.read_text(encoding='utf-8')
     code = code.replace('"sort"', '"sort"\n "runtime"\n "strings"')
     code = code.replace('return uint16(info.Mode().Perm())', '''if runtime.GOOS == "windows" {
         if info.IsDir() || info.Name() == "SmartClock" || strings.HasSuffix(info.Name(), ".command") { return 0o755 }

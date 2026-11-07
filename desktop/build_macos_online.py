@@ -12,7 +12,7 @@ RELEASE = ROOT / 'outputs/desktop-release'
 
 
 def build(arch, output_dir=None):
-    pins = json.loads((ROOT / 'desktop/micromamba.json').read_text())
+    pins = json.loads((ROOT / 'desktop/micromamba.json').read_text(encoding='utf-8'))
     pin = pins[arch]
     platform = 'macOS-AppleSilicon' if arch == 'arm64' else 'macOS-Intel'
     client = io.BytesIO()
@@ -27,7 +27,7 @@ def build(arch, output_dir=None):
     content = client.getvalue()
     client_hash = hashlib.sha256(content).hexdigest()
     template = (ROOT / 'desktop/macos_setup.command').read_text(encoding='utf-8')
-    esphome_pin = (ROOT / 'ESPHOME_VERSION').read_text().strip()
+    esphome_pin = (ROOT / 'ESPHOME_VERSION').read_text(encoding='utf-8').strip()
     identity = hashlib.sha256((client_hash + arch + template + json.dumps(pin, sort_keys=True) + esphome_pin).encode()).hexdigest()[:20]
     config = {'ARCH': arch, 'BUILD_ID': identity, 'CLIENT_SHA': client_hash, 'MAMBA_URL': pin['url'],
               'MAMBA_SHA': pin['sha256'], 'MAMBA_SIZE': str(pin['size']), 'MAMBA_BINARY_SHA': pin['binary_sha256'],

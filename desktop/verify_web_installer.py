@@ -29,7 +29,7 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 def main(compile_firmware=False):
-    metadata = json.loads((ROOT / 'outputs/onefile-build/web-installer.json').read_text())
+    metadata = json.loads((ROOT / 'outputs/onefile-build/web-installer.json').read_text(encoding='utf-8'))
     server = ThreadingHTTPServer(('127.0.0.1', 0), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
@@ -64,11 +64,11 @@ def main(compile_firmware=False):
             if result.returncode:
                 error = data / 'startup-error.log'
                 if error.exists():
-                    print(error.read_text(), flush=True)
+                    print(error.read_text(encoding='utf-8'), flush=True)
                 raise SystemExit(result.returncode)
             assert Handler.requests >= 1, 'Cold installation did not download the package'
-            assert settings.read_text() == 'wifi_ssid: "preserve-this-setting"\n'
-            assert (old / '.complete').read_text() == 'previous-good-version'
+            assert settings.read_text(encoding='utf-8') == 'wifi_ssid: "preserve-this-setting"\n'
+            assert (old / '.complete').read_text(encoding='utf-8') == 'previous-good-version'
             marker = data / 'application' / metadata['identity'] / '.complete'
             stamp = marker.stat().st_mtime_ns
             server.shutdown()
@@ -83,7 +83,7 @@ def main(compile_firmware=False):
             assert failed.returncode != 0
             failed_marker = failed_data / 'SmartClock/application' / metadata['identity'] / '.complete'
             assert not failed_marker.exists()
-            assert settings.read_text() == 'wifi_ssid: "preserve-this-setting"\n'
+            assert settings.read_text(encoding='utf-8') == 'wifi_ssid: "preserve-this-setting"\n'
             print('Cold HTTP install, isolated EXE, preserved settings/runtime, offline warm launch and safe offline failure OK', flush=True)
     finally:
         if thread.is_alive():

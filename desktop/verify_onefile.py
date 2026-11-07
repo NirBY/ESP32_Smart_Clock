@@ -8,7 +8,7 @@ import tempfile
 
 root = Path(__file__).resolve().parents[1]
 source = root / 'outputs/desktop-release/SmartClock-Windows-x64.exe'
-identity = (root / 'outputs/onefile-build/payload-id.txt').read_text().strip()
+identity = (root / 'outputs/onefile-build/payload-id.txt').read_text(encoding='utf-8').strip()
 app_data = Path(os.environ['LOCALAPPDATA']) / 'SmartClock'
 cache = app_data / 'application' / identity
 env = os.environ.copy()
@@ -28,7 +28,7 @@ with tempfile.TemporaryDirectory(prefix='Single EXE שלום ', dir=root / 'outp
     if result.returncode:
         error = app_data / 'startup-error.log'
         if error.exists():
-            print(error.read_text(), flush=True)
+            print(error.read_text(encoding='utf-8'), flush=True)
         raise SystemExit(result.returncode)
     marker = cache / '.complete'
     before = marker.stat().st_mtime_ns

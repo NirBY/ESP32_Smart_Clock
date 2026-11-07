@@ -13,7 +13,7 @@ def get_mingit():
     pin = json.loads((ROOT / 'desktop/mingit.json').read_text(encoding='utf-8'))
     cache = ROOT / 'outputs/mingit' / pin['version']
     marker = cache / '.mingit-complete'
-    if marker.exists() and marker.read_text() == pin['sha256'] and (cache / 'cmd/git.exe').is_file():
+    if marker.exists() and marker.read_text(encoding='utf-8') == pin['sha256'] and (cache / 'cmd/git.exe').is_file():
         return cache
     archive = ROOT / 'outputs/mingit' / (pin['version'] + '.zip')
     archive.parent.mkdir(parents=True, exist_ok=True)

@@ -229,7 +229,7 @@ class App:
             if re.fullmatch(r'[vV]?\d+\.\d+\.\d+(?:-beta\.\d+)?', tag):
                 candidate = DATA / 'downloads' / tag
                 pin = candidate / 'ESPHOME_VERSION'
-                if pin.exists() and pin.read_text().strip() == importlib.metadata.version('esphome') and cache_is_current(candidate / 'esphome-smart-clock.yaml', self.source / 'esphome-smart-clock.yaml'):
+                if pin.exists() and pin.read_text(encoding='utf-8').strip() == importlib.metadata.version('esphome') and cache_is_current(candidate / 'esphome-smart-clock.yaml', self.source / 'esphome-smart-clock.yaml'):
                     self.source = candidate
         self.profile = DATA / 'device'
         saved = {}

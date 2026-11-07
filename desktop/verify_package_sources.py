@@ -32,19 +32,19 @@ if __name__ == '__main__':
     if args.package:
         verify(Path(args.package))
     else:
-        metadata = json.loads((ROOT / 'outputs/onefile-build/web-installer.json').read_text())
+        metadata = json.loads((ROOT / 'outputs/onefile-build/web-installer.json').read_text(encoding='utf-8'))
         package = ROOT / 'outputs/desktop-release' / metadata['asset']
         assert hashlib.sha256(package.read_bytes()).hexdigest() == metadata['sha256']
         with zipfile.ZipFile(package) as archive:
             pins = [name for name in archive.namelist() if re.fullmatch(r'runtime/Lib/site-packages/esphome-[^/]+\.dist-info/METADATA', name)]
             assert len(pins) == 1, 'Expected exactly one installed ESPHome distribution'
             installed = re.search(r'^Version: (.+)$', archive.read(pins[0]).decode(), re.M).group(1).strip()
-            assert installed == (ROOT / 'ESPHOME_VERSION').read_text().strip(), 'Packaged ESPHome differs from release pin'
-        version = __import__('re').search(r'firmware_version:\s*"([^"]+)"', (ROOT / 'esphome-smart-clock.yaml').read_text()).group(1)
+            assert installed == (ROOT / 'ESPHOME_VERSION').read_text(encoding='utf-8').strip(), 'Packaged ESPHome differs from release pin'
+        version = __import__('re').search(r'firmware_version:\s*"([^"]+)"', (ROOT / 'esphome-smart-clock.yaml').read_text(encoding='utf-8')).group(1)
         assert f'/v{version}/' in metadata['url'], 'Installer URL targets a different release'
         installer = ROOT / 'outputs/desktop-release/SmartClock-Windows-x64.exe'
         binary = installer.read_bytes()
         for value in (metadata['sha256'], metadata['url']):
             assert value.encode('utf-16le') in binary, 'EXE does not reference the verified runtime'
-        assert installer.with_suffix('.sha256').read_text().split()[0] == hashlib.sha256(binary).hexdigest()
+        assert installer.with_suffix('.sha256').read_text(encoding='utf-8').split()[0] == hashlib.sha256(binary).hexdigest()
         verify(package)

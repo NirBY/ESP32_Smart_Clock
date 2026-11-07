@@ -23,13 +23,13 @@ metadata = plistlib.loads(raw[xml_offset:xml_offset+xml_length])
 tables = metadata['resource-fork']['blkx']
 table_crcs = b''.join(table['Data'][72:76] for table in tables)
 assert zlib.crc32(table_crcs) == struct.unpack_from('>I', footer, 360)[0]
-assert image.with_suffix('.sha256').read_text().startswith(hashlib.sha256(raw).hexdigest() + ' ')
+assert image.with_suffix('.sha256').read_text(encoding='utf-8').startswith(hashlib.sha256(raw).hexdigest() + ' ')
 sevenzip = shutil.which('7z') or 'C:/Program Files/7-Zip/7z.exe'
 checked = subprocess.check_output([sevenzip, 't', str(image)], text=True)
 assert 'Everything is Ok' in checked and 'WARNINGS' not in checked and 'CRC Error' not in checked, checked
 listing = subprocess.check_output([sevenzip, 'l', '-slt', str(image)], text=True)
 assert 'Type = Dmg' in listing and 'Type = HFS' in listing
-manifest = json.loads((ROOT / 'outputs/macos-dmg-build/image-manifest.json').read_text())
+manifest = json.loads((ROOT / 'outputs/macos-dmg-build/image-manifest.json').read_text(encoding='utf-8'))
 with tempfile.TemporaryDirectory(prefix='dmg-check-', dir=ROOT / 'outputs') as temp:
     subprocess.run([sevenzip, 'x', '-y', '-o' + temp, str(image)], check=True, stdout=subprocess.DEVNULL)
     volume = Path(temp) / 'Smart Clock Setup'
@@ -45,6 +45,6 @@ with tempfile.TemporaryDirectory(prefix='dmg-check-', dir=ROOT / 'outputs') as t
         if expected['mode'] == 0o755 and bash.exists():
             subprocess.run([str(bash), '-n', str(file)], check=True)
     dispatcher = volume / 'Smart Clock Setup.app/Contents/Resources/setup.command'
-    text = dispatcher.read_text()
+    text = dispatcher.read_text(encoding='utf-8')
     assert 'hw.optional.arm64' in text and 'arch -arm64' in text
 print('UDIF/data/master checksums, independent HFS extraction, every bundle file hash, Mac execute permissions and universal dispatcher OK')
