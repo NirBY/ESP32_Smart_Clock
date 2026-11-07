@@ -5,7 +5,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageOps
 ROOT = Path(__file__).resolve().parents[1]
 IMAGES = ROOT / 'docs/images'
 SLIDES = [
-    ('clock-real.jpg', 'Time and date', 'Large, readable clock digits. Choose 12/24-hour time, seconds and date intervals.'),
+    ('clock-real.jpg', 'Time and date', 'Large, readable clock digits. Choose 12/24-hour time or seconds, with a date screen at the top of each hour.'),
     ('sensors-real.jpg', 'Room conditions', 'Temperature, humidity and pressure in Home Assistant. Temperature and humidity on the clock.'),
     ('clock-real.jpg', 'Countdown timer', 'Start, pause, resume or cancel. Alternate the countdown with the clock and choose a completion sound.'),
     ('clock-real.jpg', 'Flexible alarms', 'Daily, weekly, monthly or specific-date alarms, with optional start and end dates.'),
