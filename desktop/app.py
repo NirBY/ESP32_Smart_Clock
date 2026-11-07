@@ -431,7 +431,8 @@ class App:
         phase = {'compile': 'Preparing build / downloading tools…', 'upload': 'Connecting to clock…', 'config': 'Validating settings…'}.get(args[0], 'Working…')
         self.events.put(('progress', dict(stage={'compile': 'prepare', 'upload': 'connect', 'config': 'validate'}.get(args[0], 'prepare'), label=phase, percent=None)))
         # Dashboard mode keeps OTA progress frames enabled when stdout is a pipe.
-        with subprocess.Popen([executable, '-I', '-m', 'esphome', '--dashboard', *args], cwd=self.profile, env=env,
+        # -I ignores PYTHONUTF8; force UTF-8 explicitly for Windows tool output.
+        with subprocess.Popen([executable, '-I', '-X', 'utf8', '-m', 'esphome', '--dashboard', *args], cwd=self.profile, env=env,
                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                               text=True, encoding='utf-8', errors='replace', creationflags=flags) as process:
             for line in process.stdout:

@@ -26,7 +26,7 @@ class SingleFileLauncher {
     static string Quote(string value) { return "\"" + value + "\""; }
 
     static ProcessStartInfo Python(string root, bool windowed, string arguments) {
-        var start = new ProcessStartInfo(Path.Combine(root, "runtime", windowed ? "pythonw.exe" : "python.exe"), "-I " + arguments);
+        var start = new ProcessStartInfo(Path.Combine(root, "runtime", windowed ? "pythonw.exe" : "python.exe"), "-I -X utf8 " + arguments);
         start.WorkingDirectory = root;
         start.UseShellExecute = false;
         start.CreateNoWindow = true;

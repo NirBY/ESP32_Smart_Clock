@@ -15,6 +15,8 @@ env['PYTHONNOUSERSITE'] = '1'
 env['PYTHONUTF8'] = '1'
 script = r'''
 import importlib.util, pathlib, sys, tempfile, tkinter, base64, importlib.metadata
+sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+sys.stderr.reconfigure(encoding='utf-8', errors='replace')
 bundle=pathlib.Path(sys.argv[1])
 assert pathlib.Path(sys.prefix).resolve() == (bundle/'runtime').resolve(), sys.prefix
 assert all('.venv' not in p for p in sys.path), sys.path

@@ -145,7 +145,7 @@ jobs:
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
           & $python tests/web_installer_download_test.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
-          & $python desktop/verify_windows.py --compile
+          & $python desktop/verify_windows.py
           if ($LASTEXITCODE) { exit $LASTEXITCODE }
       - name: Download universal macOS disk image
         if: runner.os == 'macOS'

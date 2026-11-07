@@ -13,6 +13,24 @@ spec.loader.exec_module(app)
 
 
 class InstallerTests(unittest.TestCase):
+    def test_isolated_worker_explicitly_enables_utf8(self):
+        from unittest.mock import MagicMock
+        import queue
+        with tempfile.TemporaryDirectory() as temp:
+            ui = app.App.__new__(app.App)
+            ui.profile = Path(temp)
+            ui.events = queue.Queue()
+            (ui.profile / 'secrets.yaml').write_text('wifi_ssid: test\n')
+            process = MagicMock()
+            process.__enter__.return_value = process
+            process.stdout = iter(['Unicode tools: ✓ שלום\n'])
+            process.wait.return_value = 0
+            with patch.object(app.subprocess, 'Popen', return_value=process) as launch:
+                ui.command('config', 'esphome-smart-clock.yaml')
+            arguments = launch.call_args.args[0]
+            self.assertEqual(arguments[1:5], ['-I', '-X', 'utf8', '-m'])
+            self.assertEqual(launch.call_args.kwargs['encoding'], 'utf-8')
+
     def test_new_installer_does_not_select_an_older_cached_beta(self):
         with tempfile.TemporaryDirectory() as temp:
             bundled = Path(temp) / 'bundled.yaml'
