@@ -29,9 +29,14 @@ shutil.copy2(ROOT / 'desktop/app.py', OUT / 'app.py')
 shutil.copy2(ROOT / 'desktop/install_drivers.ps1', OUT / 'install_drivers.ps1')
 shutil.copy2(ROOT / 'docs/wiki/Desktop-App.md', OUT / 'USER-GUIDE.txt')
 firmware = OUT / 'firmware'
+if not firmware.resolve().is_relative_to((ROOT / 'outputs').resolve()):
+    raise RuntimeError('Refusing to replace firmware outside the build output')
+if firmware.exists():
+    shutil.rmtree(firmware)
 firmware.mkdir(exist_ok=True)
 for name in ('src', 'media', 'components'):
-    shutil.copytree(ROOT / name, firmware / name, dirs_exist_ok=True)
+    if (ROOT / name).exists():
+        shutil.copytree(ROOT / name, firmware / name, dirs_exist_ok=True)
 shutil.copy2(ROOT / 'esphome-smart-clock.yaml', firmware)
 launcher = OUT / 'launcher.cs'
 launcher.write_text('''using System;
