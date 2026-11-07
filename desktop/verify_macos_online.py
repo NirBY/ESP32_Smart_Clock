@@ -24,7 +24,9 @@ with tempfile.TemporaryDirectory(prefix='smartclock-mac-') as temp:
         subprocess.run(['/bin/bash', '-n', str(launcher)], check=True)
         subprocess.run(['/bin/bash', '-n', str(setup)], check=True)
         for cpu in ('arm64', 'x86_64'):
-            subprocess.run(['/bin/bash', '-n', str(bundle / 'Resources' / f'setup-{cpu}.command')], check=True)
+            cpu_setup = bundle / 'Resources' / f'setup-{cpu}.command'
+            assert "ESPHOME_PIN='" + (ROOT / 'ESPHOME_VERSION').read_text().strip() + "'" in cpu_setup.read_text(), 'Mac installer uses an outdated ESPHome pin'
+            subprocess.run(['/bin/bash', '-n', str(cpu_setup)], check=True)
         subprocess.run([str(setup), '--verify-compile'], check=True)
         subprocess.run([str(setup), '--extract-only'], check=True)
     finally:

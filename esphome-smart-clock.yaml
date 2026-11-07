@@ -2421,7 +2421,9 @@ display:
       if (active_until(id(date_message_until))) {
         auto date_now = id(ntp_time).now();
         if (date_now.is_valid()) {
-          it.strftime(0, 0, id(matrix_font), "%a %d/%m", date_now);
+          // Keep weekday/date on the same legible 3x7 pixel text path as
+          // messages. The general font is too tall/wide for this 32x8 canvas.
+          show_text(date_now.strftime("%a %d/%m"));
           return;
         }
       }

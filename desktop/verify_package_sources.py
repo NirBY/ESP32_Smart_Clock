@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 import hashlib
 import json
+import re
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +35,11 @@ if __name__ == '__main__':
         metadata = json.loads((ROOT / 'outputs/onefile-build/web-installer.json').read_text())
         package = ROOT / 'outputs/desktop-release' / metadata['asset']
         assert hashlib.sha256(package.read_bytes()).hexdigest() == metadata['sha256']
+        with zipfile.ZipFile(package) as archive:
+            pins = [name for name in archive.namelist() if re.fullmatch(r'runtime/Lib/site-packages/esphome-[^/]+\.dist-info/METADATA', name)]
+            assert len(pins) == 1, 'Expected exactly one installed ESPHome distribution'
+            installed = re.search(r'^Version: (.+)$', archive.read(pins[0]).decode(), re.M).group(1).strip()
+            assert installed == (ROOT / 'ESPHOME_VERSION').read_text().strip(), 'Packaged ESPHome differs from release pin'
         version = __import__('re').search(r'firmware_version:\s*"([^"]+)"', (ROOT / 'esphome-smart-clock.yaml').read_text()).group(1)
         assert f'/v{version}/' in metadata['url'], 'Installer URL targets a different release'
         installer = ROOT / 'outputs/desktop-release/SmartClock-Windows-x64.exe'
