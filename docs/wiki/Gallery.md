@@ -2,10 +2,10 @@
 
 ## Feature presentation
 
-![Animated nine-slide feature gallery](../images/clock-showcase.gif)
+![Animated ten-slide feature gallery](../images/clock-showcase.gif)
 
-The original eight feature panels are followed by a dedicated alarm-schedule
-detail slide immediately after the alarm overview. [Feature storyboard](../images/showcase-storyboard.png) · [Alarm schedule slide](../images/alarm-schedules.png).
+The rotating gallery keeps the original eight feature panels and adds detailed
+alarm-schedule and alert-sound slides. [Feature storyboard](../images/showcase-storyboard.png) · [Alarm schedules](../images/alarm-schedules.png) · [Alert sounds](../images/alert-sounds.png).
 
 ## Alarm schedules
 
@@ -23,6 +23,16 @@ weekday switches, day-of-month control, or date picker for your selection.*
 See the [alarm setup and scheduling rules](Alarm.md). The clock displays
 `ALARM`, plays the selected local Alarm Sound, and sends an event to Home
 Assistant for additional automations.
+
+## Alert sounds
+
+![Six alert sound options](../images/alert-sounds.png)
+
+Choose Silent, Single beep, Double beep, Classic alarm, Cuckoo or Timer melody.
+That is five audible sounds plus Silent. Alarm, Hourly, Timer, Reminder and
+Volume each have their own selection and sound-test button in the supplied
+Home Assistant dashboard. These are local alert sounds, rather than speech
+voices. See the [audio guide](Audio-And-Music.md#local-alert-sounds).
 
 ## Actual printed clock
 

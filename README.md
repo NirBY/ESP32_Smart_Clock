@@ -4,7 +4,7 @@ An ESP32 clock with an 8x32 LED matrix, environmental sensors, alarms, countdown
 
 [![Clock, countdown, sensors, messages, alarms, audio, Home Assistant and printable enclosure](docs/images/clock-showcase.gif)](docs/wiki/Gallery.md)
 
-*Nine rotating gallery slides in the original gallery style. Product illustrations are based on the real printed clock and enclosure geometry; display examples are illustrative. [Actual build photos](docs/wiki/Gallery.md#actual-printed-clock) · [Feature storyboard](docs/images/showcase-storyboard.png) · [Alarm schedule slide](docs/wiki/Gallery.md#alarm-schedules).*
+*Ten rotating gallery slides in the original gallery style. Product illustrations are based on the real printed clock and enclosure geometry; display examples are illustrative. [Actual build photos](docs/wiki/Gallery.md#actual-printed-clock) · [Feature storyboard](docs/images/showcase-storyboard.png) · [Alarm schedule slide](docs/wiki/Gallery.md#alarm-schedules) · [Alert sound slide](docs/wiki/Gallery.md#alert-sounds).*
 
 [Wiring guide](docs/wiki/Wiring.md) · [Parts list](docs/wiki/Shopping-List.md) · [Build gallery](docs/wiki/Gallery.md)
 

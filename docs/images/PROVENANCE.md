@@ -100,3 +100,18 @@ The current rotating gallery has nine frames: the eight original feature panels,
 with `alarm-schedules.png` inserted immediately after the alarm overview.
 The detailed schedule slide is held for eight seconds; the other frames use
 four seconds. The full schedule explanation lives in `docs/wiki/Gallery.md`.
+
+## Alert sound choices slide
+
+`alert-sounds.png` was created with the built-in ImageGen tool as a separate
+sibling of `alarm-schedules.png`, using that existing image as a style template.
+Prompt: keep the navy/cyan ESP32 SMART CLOCK campaign, use six equal cards with
+exact labels Silent, Single beep, Double beep, Classic alarm, Cuckoo and Timer
+melody; explain independent Alarm/Hourly/Timer/Reminder/Volume choices and the
+sound-test controls. State Five audible sounds + Silent; do not imply speech
+voices. Preserve the Illustrative controls and NirBY footer. The original
+alarm graphic is unchanged.
+
+The current GIF has ten slides. The alarm-schedule detail follows the alarm
+overview, and the six-choice sound slide follows the music/speaker overview.
+Both detail slides pause for eight seconds; the remaining slides use four.
