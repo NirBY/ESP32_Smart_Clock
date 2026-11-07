@@ -45,7 +45,7 @@ reports that venv or ensurepip is missing.
 
 ```sh
 python -m pip install --upgrade pip
-python -m pip install "esphome==2026.10.0"
+python -m pip install "esphome==2026.10.1"
 python -m esphome version
 ```
 

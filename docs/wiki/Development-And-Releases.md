@@ -36,7 +36,7 @@ Important: PlatformIO installs the PlatformIO firmwares in `platformio.ini`. The
 8. Install ESPHome:
 
    ```sh
-   python -m pip install "esphome==2026.10.0"
+   python -m pip install "esphome==2026.10.1"
    ```
 
 9. Verify the tools:

@@ -6,7 +6,7 @@ Build Windows from an isolated environment to avoid including unrelated packages
 
 ```powershell
 python -m venv outputs/desktop-build-env
-outputs/desktop-build-env/Scripts/python.exe -m pip install "esphome==2026.10.0"
+outputs/desktop-build-env/Scripts/python.exe -m pip install "esphome==2026.10.1"
 outputs/desktop-build-env/Scripts/python.exe -m pip check
 outputs/desktop-build-env/Scripts/python.exe desktop/build_windows.py
 outputs/desktop-build-env/Scripts/python.exe desktop/verify_windows.py --compile

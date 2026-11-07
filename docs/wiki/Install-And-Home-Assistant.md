@@ -11,7 +11,7 @@ Use this for the normal smart clock firmware.
 After activating the ESPHome environment from [Local setup](Local-Setup.md), run on any OS:
 
 ```sh
-python -m pip install "esphome==2026.10.0"
+python -m pip install "esphome==2026.10.1"
 ```
 
 Verify it installed:

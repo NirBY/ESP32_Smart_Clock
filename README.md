@@ -9,7 +9,7 @@ Release `0.1.0-beta.19` uses HA-compatible firmware versions and rejects develop
 Release `0.1.0-beta.15` added a local countdown with a dedicated
 Home Assistant Timer device, configurable countdown/clock display intervals,
 and sliding transitions. See [Timer controls and behavior](docs/wiki/Timer.md).
-ESPHome is pinned to 2026.10.0. The countdown completion melody was installed
+ESPHome is pinned to 2026.10.1. The countdown completion melody was installed
 and audibly approved on the creator's clock. The optional HA MCP script package
 still requires installation and end-to-end MCP testing.
 
@@ -145,7 +145,7 @@ on Windows, Apple Silicon and Intel Macs before publishing.
 
 Follow [local setup for Windows, macOS or Linux](docs/wiki/Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
 
-1. Clone the repository and create the ESPHome environment using the linked setup guide (tested ESPHome: `2026.10.0`).
+1. Clone the repository and create the ESPHome environment using the linked setup guide (tested ESPHome: `2026.10.1`).
 2. Copy `secrets.example.yaml` to `secrets.yaml`.
 3. Put your Wi-Fi and ESPHome API key in `secrets.yaml`.
 4. Connect the ESP32 with a USB data cable.
@@ -255,7 +255,7 @@ The listing was submitted on October 24, 2026 and is subject to platform review.
 | Component | Version |
 |---|---|
 | Clock firmware | 0.1.0-beta.15 (tested locally as beta.15-dev.3) |
-| ESPHome | 2026.10.0 (see `ESPHOME_VERSION`) |
+| ESPHome | 2026.10.1 (see `ESPHOME_VERSION`) |
 | PlatformIO Core (ESPHome build environment) | 6.2.0 |
 | PlatformIO Core (separate Arduino builds) | 6.2.0 |
 | Arduino PlatformIO platform | pioarduino 55.03.312-1 |
