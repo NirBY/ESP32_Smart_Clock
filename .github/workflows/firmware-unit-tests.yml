@@ -9,6 +9,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
       - run: g++ -std=c++17 -Wall -Wextra -Werror tests/clock_timer_test.cpp -o /tmp/clock_timer_test && /tmp/clock_timer_test
       - run: g++ -std=c++17 -Wall -Wextra -Werror tests/alarm_schedule_test.cpp -o /tmp/alarm_schedule_test && /tmp/alarm_schedule_test
       - run: python -m pip install PyYAML Jinja2 awesomeversion pyserial
