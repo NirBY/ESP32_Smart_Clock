@@ -35,8 +35,7 @@ a cable. Topics: time, countdown, temperature/humidity, custom messages, daily
 alarm schedules, audio, Home Assistant/MCP (setup required), and printable enclosure.
 Every slide is labeled illustrative. The exploded enclosure illustration is
 promotional, not a CAD reference; use the STL renders and guide for assembly.
-`tools/build_showcase.py` extracts the supplied panels and encodes an eight-frame,
-four-seconds-per-frame looping GIF; it does not generate or alter hardware details.
+`tools/build_showcase.py` extracts the supplied panels for the looping GIF; it does not generate or alter hardware details.
 
 ## Rear-opening correction and alarm schedules
 
@@ -96,7 +95,7 @@ were kept. Final prompt: change only these colon and rear-opening details;
 preserve the campaign and use the firmware bitmap and actual STL views as the
 authoritative references. The built-in tool was used for both edits.
 
-The current rotating gallery has nine frames: the eight original feature panels,
+An alarm-schedule detail frame was added to the eight original feature panels,
 with `alarm-schedules.png` inserted immediately after the alarm overview.
 The detailed schedule slide is held for eight seconds; the other frames use
 four seconds. The full schedule explanation lives in `docs/wiki/Gallery.md`.
