@@ -50,6 +50,8 @@ views:
           - entity: number.esp32_smart_clock_display_brightness
             name: Brightness
             icon: mdi:brightness-6
+          - entity: switch.esp32_smart_clock_brightness_schedule_enabled
+            name: Day / night automatic brightness
           - entity: select.esp32_smart_clock_time_format
             name: Time format
             icon: mdi:clock-digital
@@ -66,6 +68,10 @@ views:
             name: Sensor message seconds
           - entity: number.esp32_smart_clock_sensor_message_interval_seconds
             name: Sensor message interval
+
+      # Install /local/smart-clock-brightness-card.js as a module resource first.
+      - type: custom:smart-clock-brightness-card
+        entity: text.esp32_smart_clock_brightness_schedule
 
       - type: markdown
         content: >
@@ -182,7 +188,7 @@ views:
           **Audio notes:** the speaker entity handles playback. `Speaker
           connected` is a manual health hint because the I2S amplifier has no
           detection pin. If it is off, the system alert rotation can show
-          `NO SPK`. `Hourly beep` plays the same local beep as volume feedback
+          `NO SPK`. `Hourly beep` plays the selected local hourly sound
           at the top of each hour, skips it while audio is already active, and
           suppresses it during quiet hours such as `22` to `7`.
 
@@ -239,3 +245,28 @@ views:
             name: BMP280 temperature
           - entity: sensor.esp32_smart_clock_pressure
             name: Pressure
+
+      - type: entities
+        title: Alert sounds
+        show_header_toggle: false
+        entities:
+          - entity: select.esp32_smart_clock_alarm_sound
+            name: Alarm sound
+          - entity: button.esp32_smart_clock_test_alarm_sound
+            name: Test alarm sound
+          - entity: select.esp32_smart_clock_hourly_sound
+            name: Hourly sound
+          - entity: button.esp32_smart_clock_test_hourly_sound
+            name: Test hourly sound
+          - entity: select.esp32_smart_clock_timer_sound
+            name: Timer sound
+          - entity: button.esp32_smart_clock_test_timer_sound
+            name: Test timer sound
+          - entity: select.esp32_smart_clock_reminder_sound
+            name: Reminder sound
+          - entity: button.esp32_smart_clock_test_reminder_sound
+            name: Test reminder sound
+          - entity: select.esp32_smart_clock_volume_sound
+            name: Volume sound
+          - entity: button.esp32_smart_clock_test_volume_sound
+            name: Test volume sound

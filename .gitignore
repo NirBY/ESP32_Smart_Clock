@@ -16,3 +16,11 @@ docs/reviews/
 .pytest_cache/
 *.tmp
 *.bak
+
+# Local installers, editor backups and build products
+*.log
+*.dmg
+*.exe
+*.7z
+*.partial
+.DS_Store

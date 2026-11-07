@@ -1,0 +1,7 @@
+{
+  "go_url": "https://go.dev/dl/go1.27.3.windows-amd64.zip",
+  "go_sha256": "f26081f438319757f8a1b46d7d0b2c5ec7583d4038e485e0aa725cfde7885fff",
+  "writer_commit": "48284c0071ae40dbd2770ed68a40ffcfee53cde2",
+  "writer_url": "https://codeload.github.com/JetBrains/go-dmg-writer/zip/48284c0071ae40dbd2770ed68a40ffcfee53cde2",
+  "writer_sha256": "0e1d62a19d74f226fcdec2e3a0127fd748be79b62d27c3e7edd1e54feec4cbb2"
+}

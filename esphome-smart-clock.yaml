@@ -2,7 +2,7 @@ substitutions:
   device_name: esp32-smart-clock
   friendly_name: ESP32 Smart Clock
   # HA-compatible version only; development suffixes are rejected at compile time.
-  firmware_version: "0.1.0-beta.22"
+  firmware_version: "0.1.0"
   github_repo: NirBY/ESP32_Smart_Clock
   github_release_manifest_url: "https://raw.githubusercontent.com/${github_repo}/firmware-latest/firmware-manifest.json"
   bmp280_address: "0x77"
@@ -33,6 +33,7 @@ esphome:
     - src/system_health.h
     - src/clock_timer.h
     - src/alarm_schedule.h
+    - src/brightness_schedule.h
   on_boot:
     - priority: 800
       then:
@@ -86,6 +87,41 @@ api:
   max_connections: 2
   max_send_queue: 4
   actions:
+    - action: add_brightness_range
+      variables:
+        range: string
+      then:
+        - lambda: |-
+            std::vector<smart_clock::BrightnessRange> parsed;
+            if (!smart_clock::parse_brightness_schedule(range, parsed) || parsed.size() != 1) return;
+            const auto current = id(brightness_schedule).state;
+            const auto next = current.empty() ? range : current + ";" + range;
+            if (next.size() > 254) return;
+            auto call = id(brightness_schedule).make_call();
+            call.set_value(next);
+            call.perform();
+    - action: remove_brightness_range
+      variables:
+        index: int
+      then:
+        - lambda: |-
+            const auto current = id(brightness_schedule).state;
+            std::string next;
+            size_t pos = 0;
+            int row = 1;
+            bool removed = false;
+            while (pos < current.size()) {
+              auto end = current.find(';', pos);
+              auto item = current.substr(pos, end == std::string::npos ? end : end - pos);
+              if (row++ == index) removed = true;
+              else { if (!next.empty()) next += ";"; next += item; }
+              if (end == std::string::npos) break;
+              pos = end + 1;
+            }
+            if (!removed) return;
+            auto call = id(brightness_schedule).make_call();
+            call.set_value(next);
+            call.perform();
     - action: start_timer
       variables:
         seconds: int
@@ -120,6 +156,18 @@ api:
             id(text_message) = message;
             id(text_message_until) = message.empty() ? 0 : millis() + (uint32_t) (seconds * 1000.0f);
         - component.update: matrix_display
+        - if:
+            condition:
+              lambda: return !message.empty();
+            then:
+              - script.execute:
+                  id: play_alert_sound
+                  sound: !lambda return id(reminder_sound).current_option();
+    - action: play_reminder
+      then:
+        - script.execute:
+            id: play_alert_sound
+            sound: !lambda return id(reminder_sound).current_option();
     - action: clear_message
       then:
         - lambda: |-
@@ -167,6 +215,11 @@ wifi:
 captive_portal:
 
 globals:
+  - id: saved_brightness_schedule
+    type: std::string
+    restore_value: true
+    max_restore_data_length: 254
+    initial_value: '"07:00-22:00=3;22:00-07:00=0"'
   - id: timer_done_until
     type: uint32_t
     restore_value: no
@@ -478,6 +531,58 @@ time:
           - component.update: matrix_display
 
 script:
+  - id: apply_display_brightness
+    then:
+      - lambda: |-
+          const int fallback = isnan(id(display_brightness).state) ? 3 : (int) id(display_brightness).state;
+          int level = fallback;
+          auto now = id(ntp_time).now();
+          if (id(brightness_schedule_enabled).state && now.is_valid()) {
+            std::vector<smart_clock::BrightnessRange> ranges;
+            if (smart_clock::parse_brightness_schedule(id(saved_brightness_schedule), ranges))
+              level = smart_clock::scheduled_brightness(ranges, now.hour * 60 + now.minute, fallback);
+          }
+          id(matrix_display).intensity((uint8_t) level);
+  - id: play_alert_sound
+    mode: single
+    parameters:
+      sound: string
+    then:
+      - if:
+          condition:
+            lambda: return sound == "Single beep";
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: volume_beep
+                announcement: true
+      - if:
+          condition:
+            lambda: return sound == "Double beep";
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: double_beep
+                announcement: true
+      - if:
+          condition:
+            lambda: return sound == "Classic alarm";
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: classic_alarm
+                announcement: true
+      - if:
+          condition:
+            lambda: return sound == "Cuckoo";
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: cuckoo
+                announcement: true
+      - if:
+          condition:
+            lambda: return sound == "Timer melody";
+          then:
+            - media_player.speaker.play_on_device_media_file:
+                media_file: timer_finished_chime
+                announcement: true
   - id: request_time_sync
     mode: restart
     then:
@@ -512,6 +617,9 @@ script:
           id(text_message) = "ALARM";
           id(text_message_until) = millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
+      - script.execute:
+          id: play_alert_sound
+          sound: !lambda return id(alarm_sound).current_option();
       - homeassistant.event:
           event: esphome.alarm_triggered
           data:
@@ -617,6 +725,27 @@ text_sensor:
 
 text:
   - platform: template
+    name: "Brightness Schedule"
+    id: brightness_schedule
+    device_id: display_device
+    icon: "mdi:theme-light-dark"
+    entity_category: config
+    lambda: return id(saved_brightness_schedule);
+    update_interval: 1s
+    min_length: 0
+    max_length: 254
+    mode: text
+    set_action:
+      - lambda: |-
+          std::vector<smart_clock::BrightnessRange> parsed;
+          if (!smart_clock::parse_brightness_schedule(x, parsed)) {
+            ESP_LOGW("settings", "Invalid brightness schedule; use HH:MM-HH:MM=0..15 separated by semicolons");
+            return;
+          }
+          id(saved_brightness_schedule) = x;
+          id(brightness_schedule).publish_state(x);
+      - script.execute: apply_display_brightness
+  - platform: template
     name: "Screen Message"
     id: screen_message_text
     device_id: display_device
@@ -632,8 +761,18 @@ text:
           id(text_message) = x;
           id(text_message_until) = x.empty() ? 0 : millis() + (uint32_t) (seconds * 1000.0f);
       - component.update: matrix_display
+      - if:
+          condition:
+            lambda: return !x.empty();
+          then:
+            - script.execute:
+                id: play_alert_sound
+                sound: !lambda return id(reminder_sound).current_option();
 
 interval:
+  - interval: 1s
+    then:
+      - script.execute: apply_display_brightness
   - interval: 100ms
     then:
       - lambda: |-
@@ -645,13 +784,13 @@ interval:
             - lambda: |-
                 id(timer_finished_pending) = false;
                 id(timer_done_until) = millis() + 10000;
-                ESP_LOGI("timer", "Timer finished; playing six-second completion melody");
+                ESP_LOGI("timer", "Timer finished; playing selected completion sound");
             - component.update: timer_remaining
             - component.update: timer_state
             - component.update: matrix_display
-            - media_player.speaker.play_on_device_media_file:
-                media_file: timer_finished_chime
-                announcement: true
+            - script.execute:
+                id: play_alert_sound
+                sound: !lambda return id(timer_sound).current_option();
             - homeassistant.event:
                 event: esphome.timer_finished
                 data:
@@ -666,28 +805,17 @@ interval:
             lambda: |-
               return id(volume_beep_pending) || id(hourly_beep_pending);
           then:
-            - lambda: |-
-                const bool volume_beep = id(volume_beep_pending);
-                const bool hourly_beep = id(hourly_beep_pending);
-                if (id(audio_playback_active) || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_PLAYING || id(clock_speaker).state == media_player::MEDIA_PLAYER_STATE_ANNOUNCING) {
-                  ESP_LOGI("audio", "Skipping pending beep while audio is active (volume=%s, hourly=%s, state=%d)",
-                           volume_beep ? "true" : "false", hourly_beep ? "true" : "false", (int)id(clock_speaker).state);
-                  id(volume_beep_pending) = false;
-                  id(hourly_beep_pending) = false;
-                  return;
-                }
-                ESP_LOGI("audio", "Playing local beep (volume=%s, hourly=%s, audio_playback_active=false, state=%d)",
-                         volume_beep ? "true" : "false", hourly_beep ? "true" : "false", (int)id(clock_speaker).state);
-                id(volume_beep_pending) = false;
-                id(hourly_beep_pending) = false;
             - if:
                 condition:
-                  lambda: |-
-                    return !id(audio_playback_active) && id(clock_speaker).state != media_player::MEDIA_PLAYER_STATE_PLAYING && id(clock_speaker).state != media_player::MEDIA_PLAYER_STATE_ANNOUNCING;
+                  lambda: return !id(audio_playback_active) && id(clock_speaker).state != media_player::MEDIA_PLAYER_STATE_PLAYING && id(clock_speaker).state != media_player::MEDIA_PLAYER_STATE_ANNOUNCING;
                 then:
-                  - media_player.speaker.play_on_device_media_file:
-                      media_file: volume_beep
-                      announcement: true
+                  - script.execute:
+                      id: play_alert_sound
+                      sound: !lambda |-
+                        return id(hourly_beep_pending) ? id(hourly_sound).current_option() : id(volume_sound).current_option();
+            - lambda: |-
+                id(volume_beep_pending) = false;
+                id(hourly_beep_pending) = false;
 
   - interval: 1s
     then:
@@ -834,6 +962,51 @@ interval:
 
 button:
   - platform: template
+    name: "Test Alarm Sound"
+    id: test_alarm_sound
+    device_id: alarm_device
+    icon: "mdi:play-circle-outline"
+    on_press:
+      - script.execute:
+          id: play_alert_sound
+          sound: !lambda return id(alarm_sound).current_option();
+  - platform: template
+    name: "Test Hourly Sound"
+    id: test_hourly_sound
+    device_id: audio_device
+    icon: "mdi:play-circle-outline"
+    on_press:
+      - script.execute:
+          id: play_alert_sound
+          sound: !lambda return id(hourly_sound).current_option();
+  - platform: template
+    name: "Test Timer Sound"
+    id: test_timer_sound
+    device_id: timer_device
+    icon: "mdi:play-circle-outline"
+    on_press:
+      - script.execute:
+          id: play_alert_sound
+          sound: !lambda return id(timer_sound).current_option();
+  - platform: template
+    name: "Test Reminder Sound"
+    id: test_reminder_sound
+    device_id: audio_device
+    icon: "mdi:play-circle-outline"
+    on_press:
+      - script.execute:
+          id: play_alert_sound
+          sound: !lambda return id(reminder_sound).current_option();
+  - platform: template
+    name: "Test Volume Sound"
+    id: test_volume_sound
+    device_id: audio_device
+    icon: "mdi:play-circle-outline"
+    on_press:
+      - script.execute:
+          id: play_alert_sound
+          sound: !lambda return id(volume_sound).current_option();
+  - platform: template
     name: "Start Timer"
     id: timer_start
     device_id: timer_device
@@ -950,7 +1123,7 @@ number:
     set_action:
       - lambda: |-
           ESP_LOGI("settings", "Display Brightness changed to %.0f", x);
-          id(matrix_display).intensity((uint8_t) x);
+      - script.execute: apply_display_brightness
       - component.update: matrix_display
 
   # Runtime-tunable display timing controls exposed to Home Assistant.
@@ -1182,6 +1355,81 @@ number:
 
 select:
   - platform: template
+    name: "Alarm Sound"
+    id: alarm_sound
+    device_id: alarm_device
+    icon: "mdi:music-note"
+    optimistic: true
+    restore_value: true
+    initial_option: "Classic alarm"
+    options:
+      - "Silent"
+      - "Single beep"
+      - "Double beep"
+      - "Classic alarm"
+      - "Cuckoo"
+      - "Timer melody"
+  - platform: template
+    name: "Hourly Sound"
+    id: hourly_sound
+    device_id: audio_device
+    icon: "mdi:music-note"
+    optimistic: true
+    restore_value: true
+    initial_option: "Single beep"
+    options:
+      - "Silent"
+      - "Single beep"
+      - "Double beep"
+      - "Classic alarm"
+      - "Cuckoo"
+      - "Timer melody"
+  - platform: template
+    name: "Timer Sound"
+    id: timer_sound
+    device_id: timer_device
+    icon: "mdi:music-note"
+    optimistic: true
+    restore_value: true
+    initial_option: "Timer melody"
+    options:
+      - "Silent"
+      - "Single beep"
+      - "Double beep"
+      - "Classic alarm"
+      - "Cuckoo"
+      - "Timer melody"
+  - platform: template
+    name: "Reminder Sound"
+    id: reminder_sound
+    device_id: audio_device
+    icon: "mdi:music-note"
+    optimistic: true
+    restore_value: true
+    initial_option: "Double beep"
+    options:
+      - "Silent"
+      - "Single beep"
+      - "Double beep"
+      - "Classic alarm"
+      - "Cuckoo"
+      - "Timer melody"
+  - platform: template
+    name: "Volume Sound"
+    id: volume_sound
+    device_id: audio_device
+    icon: "mdi:music-note"
+    optimistic: true
+    restore_value: true
+    initial_option: "Single beep"
+    options:
+      - "Silent"
+      - "Single beep"
+      - "Double beep"
+      - "Classic alarm"
+      - "Cuckoo"
+      - "Timer melody"
+  - platform: template
     name: "Alarm Schedule"
     id: alarm_schedule_mode
     device_id: alarm_device
@@ -1211,6 +1459,17 @@ select:
       - component.update: matrix_display
 
 switch:
+  - platform: template
+    name: "Brightness Schedule Enabled"
+    id: brightness_schedule_enabled
+    device_id: display_device
+    icon: "mdi:theme-light-dark"
+    optimistic: true
+    restore_mode: RESTORE_DEFAULT_OFF
+    turn_on_action:
+      - script.execute: apply_display_brightness
+    turn_off_action:
+      - script.execute: apply_display_brightness
   - platform: template
     name: "Limit Alarm to Date Range"
     id: alarm_date_range_enabled
@@ -2062,14 +2321,15 @@ display:
         draw_small_digit(25, second / 10);
         draw_small_digit(29, second % 10);
       };
-      // Four large digits fill all 32 columns: 3-column gaps inside each pair
-      // (H H : M M), 2-column gaps around the colon, no blank edge columns.
+      // Single-column colon at x=15: HH ends at x=12 and MM starts at x=18,
+      // leaving exactly two blank columns on each side. Keep three blank
+      // columns inside each digit pair and the final matrix column clear.
       auto draw_large_four = [&](int d0, int d1, int d2, int d3, bool colon_visible) {
         draw_large_digit(0, d0);
         draw_large_digit(8, d1);
         draw_large_colon(15, colon_visible);
-        draw_large_digit(19, d2);
-        draw_large_digit(27, d3);
+        draw_large_digit(18, d2);
+        draw_large_digit(26, d3);
       };
       auto draw_clock_hh_mm = [&](int hour, int minute, int second) {
         draw_large_four(hour / 10, hour % 10, minute / 10, minute % 10, (second % 2) == 0);
@@ -2242,6 +2502,12 @@ media_player:
       # the user hears the current volume immediately after changing it.
       - id: volume_beep
         file: media/volume-beep.wav
+      - id: double_beep
+        file: media/double-beep.wav
+      - id: classic_alarm
+        file: media/classic-alarm.wav
+      - id: cuckoo
+        file: media/cuckoo.wav
     on_play:
       - lambda: |-
           const float seconds = isnan(id(media_message_seconds).state) ? 10.0f : id(media_message_seconds).state;

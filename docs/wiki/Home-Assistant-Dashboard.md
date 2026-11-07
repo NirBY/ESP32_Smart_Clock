@@ -34,7 +34,7 @@ mounting. It is also included in the dashboard template. For a second clock,
 use the entity ID assigned by Home Assistant for that clock.
 
 Use `docs/home-assistant-dashboard.yaml` as a ready-to-paste Home Assistant
-dashboard view. It uses only built-in Home Assistant cards:
+dashboard view. It uses built-in Home Assistant cards plus the included brightness range editor:
 
 - Markdown cards for the explanations Home Assistant cannot show below controls
   on the generated device page.
@@ -57,3 +57,18 @@ entity IDs after pasting it into the dashboard editor.
 For a single-card workflow, you can also go to the device page and use
 Add to Dashboard, but Home Assistant chooses the generated card layout there.
 The YAML template gives a cleaner, intentional control surface.
+
+## Brightness Time Picker Card
+
+1. Copy `docs/home-assistant/smart-clock-brightness-card.js` into your Home Assistant `/config/www/` directory (create `www` if necessary).
+2. In Settings > Dashboards > Resources (enable Advanced mode in your profile if needed), add `/local/smart-clock-brightness-card.js?v=1` as a **JavaScript module**. Reload the browser.
+3. Paste the updated dashboard YAML. For a single manual card use:
+
+```yaml
+type: custom:smart-clock-brightness-card
+entity: text.esp32_smart_clock_brightness_schedule
+```
+
+The card shows a dynamic list of rows with **From** and **Until** time pickers, a brightness number (0–15), and **Remove**. **Add range** appends a row. **Save** applies the whole list; **Reload** discards unsaved edits. Removing all rows and saving clears the schedule. Turn on **Day / night automatic brightness** in Display to activate it. The card validates input and keeps edits when saving fails. It uses the existing firmware storage entity internally, so users do not type the serialized schedule. No HACS dependencies are required.
+
+Native time picker appearance follows the browser and operating system. The clock supports up to 254 stored characters (17–18 ranges depending on brightness values). Cross-midnight ranges are supported; the last matching range wins. Outside all ranges, the manual brightness applies.

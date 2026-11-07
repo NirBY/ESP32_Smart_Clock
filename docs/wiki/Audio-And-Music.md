@@ -59,9 +59,9 @@ The exact `media_player` entity ID may be different in your Home Assistant. Use 
 
 ## Local Beeps
 
-Changing the `Speaker` media-player volume plays a short local beep so you can hear the effective level immediately.
+Changing the `Speaker` media-player volume plays the selected `Volume Sound` so you can hear the effective level immediately.
 
-If `Hourly Beep Enabled` is on, the same local beep also plays at the top of each hour. The switch is restored by Home Assistant and defaults to on. The firmware skips pending beeps while audio is already playing or announcing.
+If `Hourly Beep Enabled` is on, the selected `Hourly Sound` plays at the top of each hour. The switch is restored by Home Assistant and defaults to on. The firmware skips pending beeps while audio is already playing or announcing.
 
 Hourly beep quiet hours are also configurable from Home Assistant:
 
@@ -71,7 +71,7 @@ Hourly beep quiet hours are also configurable from Home Assistant:
 - Overnight ranges are supported, so `22` to `7` means no hourly beep from 22:00 until before 07:00.
 - If start and end are the same hour, the quiet window is ignored.
 
-The beep file is `media/volume-beep.wav`. It is embedded into the ESPHome firmware at compile time, so if you change it, compile and upload again.
+The default single-beep file is `media/volume-beep.wav`. It is embedded into the ESPHome firmware at compile time, so if you change it, compile and upload again.
 
 The current beep format is:
 
@@ -185,3 +185,39 @@ If you hear white noise while logs show valid decoded audio, test these next:
 - check whether `CTRL` is floating and whether it needs GND/VCC for the selected channel
 - test `channel: left` and `channel: right` in `esphome-smart-clock.yaml`
 - test a different I2S communication format only one change at a time
+
+
+## Local alert sounds
+
+The **Alert sounds** dashboard card provides independent dropdowns for Alarm,
+Hourly, Timer, Reminder and Volume sounds. Choices are Silent, Single beep,
+Double beep, Classic alarm, Cuckoo and Timer melody. Selections survive restarts.
+Each dropdown has a **Test sound** button that plays its selected clip at the
+current speaker volume without triggering an alarm, countdown or reminder.
+Silent produces no audio, including during a test.
+Update the firmware and copy the updated dashboard YAML to see the new controls.
+
+Alarm and timer completion use their selected sound once. Hourly sounds respect
+the existing enable and quiet-hours settings. Volume feedback and hourly sounds
+are skipped during active audio; when both are pending, the hourly sound wins.
+All sounds use the existing speaker volume and announcement pipeline.
+
+Nonempty `show_message` API calls (including calendar agenda display) and Screen
+Message text updates play the Reminder sound. Clearing a message stays silent.
+Use the `play_reminder` ESPHome API action for a sound-only reminder. Choose
+Silent for Reminder Sound if calendar TTS already supplies the desired audio.
+TTS and music keep their supplied content; these dropdowns control local alerts.
+
+The three new original clips add 98,692 bytes of WAV assets in flash. They use
+16 kHz, mono, 16-bit PCM and reuse the existing playback buffers. Regenerate them
+with `python tools/generate_alert_sounds.py`. Physical playback and runtime heap
+behavior still need validation on the clock after installation.
+
+
+Build verification (2026-11-07, ESPHome 2026.10.0): the current configuration
+compiles successfully with the sound selectors and preview buttons. Flash usage
+is 1,473,324 / 1,835,008 bytes (80.3%); static RAM usage is 57,909 / 180,736 bytes
+(32.0%). This confirms partition fit, not runtime heap or audible playback.
+On Windows, if dependency preparation stalls checking component versions, build
+with `IDF_COMPONENT_CHECK_NEW_VERSION=0` to use the locked versions. This does
+not disable dependency resolution or compilation checks.

@@ -130,3 +130,11 @@ If the text appears on only part of the display:
 - Check that every MAX7219 module has 5V and GND.
 - Check module direction. Many 8x32 boards have an input side and output side.
 - Try `rotate_chip`, `reverse_enable`, or wiring from the other end if the display is mirrored or shifted.
+
+## Day / Night Brightness
+
+Enable `Brightness Schedule Enabled` to apply daily brightness ranges in the clock's configured local timezone. Use the dashboard brightness card to add/remove rows and choose times with time pickers (see [setup](Home-Assistant-Dashboard.md#brightness-time-picker-card)). The storage entity remains available for advanced integrations, using semicolon-separated ranges: `07:00-22:00=3;22:00-07:00=0`. Each range has a start, an end, and brightness from 0 (minimum light, not off) to 15. The default example is supplied with scheduling disabled.
+
+Ranges can cross midnight. Start is inclusive, end is exclusive; identical start/end times are rejected. During overlaps, the last matching range wins. Outside all ranges, while time is unavailable, or when scheduling is disabled, `Display Brightness` applies. Settings survive reboot; invalid edits keep the previous schedule. The list is dynamic up to 254 stored characters (17–18 ranges).
+
+In Home Assistant Developer Tools → Actions, `esphome.esp32_smart_clock_add_brightness_range` accepts `range: "12:00-14:00=8"`. `esphome.esp32_smart_clock_remove_brightness_range` accepts `index: 1` (positions start at 1). You can also edit the list directly in the dashboard; clear it to remove all ranges. Brightness updates within one second, including after time synchronization.

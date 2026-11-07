@@ -1,5 +1,7 @@
 # ESP32 Smart Clock
 
+Stable release `0.1.0` includes Windows/macOS online installers, automatic USB port refresh, total installation progress, brightness schedules with a Home Assistant editor, and selectable alert sounds. Download the EXE or DMG from [the latest release](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest).
+
 Release `0.1.0-beta.22` improves the large HH:MM clock and countdown numerals with an open seven-segment font, removes the internal strokes from zero, and uses single-pixel colon dots to improve readability when LED light blooms at a distance.
 
 Release `0.1.0-beta.19` uses HA-compatible firmware versions and rejects development suffixes that make HA incorrectly show **Up-to-date**. Clocks running versions such as `beta.15-dev.3` need one personalized update from their local YAML; afterward, HA can correctly compare newer releases and enable **Update**. Public binaries still use example credentials. The blueprint notification links directly to the firmware update panel. Weekly, monthly, and specific-date alarms are covered in the [alarm guide](docs/wiki/Alarm.md).
@@ -119,6 +121,27 @@ See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displa
 other actions.
 
 ## Quick Start
+
+The desktop installer is available from the latest release. It provides a Wi-Fi
+and Home Assistant settings form, USB bridge detection, Windows driver setup,
+firmware release checks and personalized compilation/upload. The Windows package
+includes Python, ESPHome and Git; no separate Python or Java installation is
+required. The tiny Windows setup EXE downloads and verifies its runtime on first
+use; Internet is also needed for firmware tools and Windows Update drivers.
+See the [desktop installation and update guide](docs/wiki/Desktop-App.md) for
+step-by-step usage and [developer build notes](desktop/README.md). The release
+workflow builds a **small Windows x64 online setup EXE** (about 23 KB), its pinned
+runtime asset, and **one universal macOS DMG online installer** (about 210 KB,
+automatically selecting Apple Silicon or Intel),
+plus SHA-256 files. Windows setup shows progress,
+retries/resumes interrupted downloads, checks SHA-256 before installation, and
+keeps the installed runtime and private settings safe when setup fails. Users do
+not extract folders or install Python/Java. Find USB and automatic scanning replace a disconnected COM/device path after
+moving the USB cable; there is no need to clear the old port. Connected choices
+and network targets are preserved. Build & install shows estimated progress for
+the whole process, reaching 100% only after success. Release checks compare
+packaged app/firmware files with the release source and exercise installation
+on Windows, Apple Silicon and Intel Macs before publishing.
 
 Follow [local setup for Windows, macOS or Linux](docs/wiki/Local-Setup.md) first. Run commands from your cloned repository root with the appropriate environment active. `CLOCK_DEVICE` means your actual USB port or network hostname/IP.
 

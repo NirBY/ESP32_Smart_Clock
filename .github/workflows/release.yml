@@ -5,6 +5,8 @@ on:
     tags:
       - "v*"
       - "V*"
+  release:
+    types: [published]
   workflow_dispatch:
     inputs:
       release_tag:
@@ -20,12 +22,174 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: release-${{ inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  verify-source:
+    name: Verify combined source changes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+      - run: python -m pip install PyYAML Jinja2 awesomeversion pyserial
+      - run: |
+          set -euo pipefail
+          for source in tests/*_test.cpp; do
+            g++ -std=c++17 -Wall -Wextra -Werror "$source" -o /tmp/clock-test
+            /tmp/clock-test
+          done
+          python tests/update_notification_test.py
+          python tests/firmware_version_ha_test.py
+          python tests/desktop_installer_test.py
+          python tests/package_sources_test.py
+          node tests/brightness_card_test.cjs
+
+  build-macos-dmg:
+    name: Build universal macOS DMG
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Match firmware to release tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.release_tag || '' }}
+          TAG_REF: ${{ github.event.release.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+          tag = os.environ['INPUT_TAG'] or os.environ['TAG_REF']
+          if tag:
+              value = tag.lstrip('vV')
+              if not re.fullmatch(r'\d+\.\d+\.\d+(?:-beta\.\d+)?', value):
+                  raise SystemExit('Unsupported firmware release version')
+              path = Path('esphome-smart-clock.yaml')
+              text = re.sub(r'(?m)^(  firmware_version:)\s*"[^"]+"', lambda m: m[1] + ' "' + value + '"', path.read_text(encoding='utf-8'), count=1)
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Create and verify universal DMG
+        run: python desktop/build_macos_dmg.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: macos-installer-dmg
+          path: |
+            outputs/desktop-release/SmartClock-macOS.dmg
+            outputs/desktop-release/SmartClock-macOS.sha256
+          if-no-files-found: error
+
+  build-desktop:
+    name: Desktop ${{ matrix.platform }}
+    needs: build-macos-dmg
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: windows-latest
+            platform: Windows-x64
+          - runner: macos-15
+            platform: macOS-AppleSilicon
+          - runner: macos-15-intel
+            platform: macOS-Intel
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+      - name: Match firmware to release tag
+        shell: bash
+        env:
+          INPUT_TAG: ${{ inputs.release_tag || '' }}
+          TAG_REF: ${{ github.event.release.tag_name || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
+        run: |
+          python - <<'PY'
+          import os, re
+          from pathlib import Path
+          tag = os.environ['INPUT_TAG'] or os.environ['TAG_REF']
+          if tag:
+              value = tag.lstrip('vV')
+              if not re.fullmatch(r'\d+\.\d+\.\d+(?:-beta\.\d+)?', value):
+                  raise SystemExit('Unsupported firmware release version')
+              path = Path('esphome-smart-clock.yaml')
+              text = re.sub(r'(?m)^(  firmware_version:)\s*"[^"]+"', lambda m: m[1] + ' "' + value + '"', path.read_text(encoding='utf-8'), count=1)
+              path.write_text(text, encoding='utf-8')
+          PY
+      - name: Build isolated Windows package
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          python -m venv outputs/desktop-build-env
+          $python = (Resolve-Path outputs/desktop-build-env/Scripts/python.exe).Path
+          $version = (Get-Content ESPHOME_VERSION -Raw).Trim()
+          & $python -m pip install "esphome==$version"
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $python -m pip check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $python desktop/build_windows.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $python tests/desktop_installer_test.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $python tests/web_installer_download_test.py
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          & $python desktop/verify_windows.py --compile
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Download universal macOS disk image
+        if: runner.os == 'macOS'
+        uses: actions/download-artifact@v4
+        with:
+          name: macos-installer-dmg
+          path: outputs/desktop-release
+      - name: Verify macOS DMG on the native architecture
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          set -euo pipefail
+          python desktop/verify_macos_online.py
+      - name: Archive standalone package
+        if: runner.os == 'Windows'
+        shell: bash
+        env:
+          DESKTOP_PLATFORM: ${{ matrix.platform }}
+          DESKTOP_RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+        run: |
+          set -euo pipefail
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            outputs/desktop-build-env/Scripts/python.exe desktop/package.py
+          else
+            python desktop/package.py
+          fi
+      - name: Reject stale Windows app or firmware in installer
+        if: runner.os == 'Windows'
+        run: outputs/desktop-build-env/Scripts/python.exe desktop/verify_package_sources.py
+      - name: Verify the online installer and offline recovery
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          outputs/desktop-build-env/Scripts/python.exe desktop/verify_web_installer.py --compile
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.platform }}
+          path: outputs/desktop-release/*
+          if-no-files-found: error
+
   build-release:
     name: Build firmware
+    needs: [build-desktop, verify-source]
     runs-on: ubuntu-latest
 
     steps:
@@ -38,8 +202,9 @@ jobs:
           INPUT_RELEASE_TAG: ${{ inputs.release_tag || '' }}
           REF_NAME: ${{ github.ref_name }}
           REF: ${{ github.ref }}
+          RELEASE_EVENT_TAG: ${{ github.event.release.tag_name || '' }}
         run: |
-          release_tag=""
+          release_tag="${RELEASE_EVENT_TAG}"
           if [ "${EVENT_NAME}" = "workflow_dispatch" ] && [ -n "${INPUT_RELEASE_TAG}" ]; then
             release_tag="${INPUT_RELEASE_TAG}"
           elif [[ "${REF}" == refs/tags/* ]]; then
@@ -191,6 +356,27 @@ jobs:
             -f ref="refs/tags/${RELEASE_TAG}" \
             -f sha="${{ github.sha }}"
 
+      - name: Collect desktop installers
+        uses: actions/download-artifact@v4
+        with:
+          pattern: desktop-*
+          path: release
+          merge-multiple: true
+
+      - name: Record release provenance and asset checksums
+        run: |
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          notes = Path('docs/releases/v' + os.environ['FIRMWARE_VERSION'] + '.md')
+          Path('outputs').mkdir(exist_ok=True)
+          Path('outputs/release-notes.md').write_text(notes.read_text() if notes.exists() else 'Smart Clock ' + os.environ['FIRMWARE_VERSION'])
+          folder = Path('release')
+          assets = {p.name: hashlib.sha256(p.read_bytes()).hexdigest() for p in sorted(folder.iterdir()) if p.is_file()}
+          manifest = dict(commit=os.environ['GITHUB_SHA'], version=os.environ['FIRMWARE_VERSION'], assets=assets)
+          (folder / 'release-provenance.json').write_text(json.dumps(manifest, indent=2) + '\n')
+          PY
+
       - name: Upload firmware artifact
         uses: actions/upload-artifact@v4
         with:
@@ -201,8 +387,9 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.release_tag != '')
         uses: softprops/action-gh-release@v2
         with:
+          body_path: outputs/release-notes.md
           tag_name: ${{ github.event_name == 'workflow_dispatch' && inputs.release_tag || github.ref_name }}
-          prerelease: ${{ github.event_name == 'workflow_dispatch' && inputs.prerelease || false }}
+          prerelease: ${{ (github.event_name == 'release' && github.event.release.prerelease) || (github.event_name == 'workflow_dispatch' && inputs.prerelease) || contains(github.ref_name, '-') }}
           files: release/*
 
       - name: Publish Home Assistant firmware update channel
