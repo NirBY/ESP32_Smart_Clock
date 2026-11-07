@@ -45,6 +45,21 @@ def version(source):
     return re.search(r'firmware_version:\s*"([^"]+)"', source).group(1)
 
 
+def release_order(value):
+    match = re.fullmatch(r'[vV]?(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?', value)
+    if not match:
+        raise ValueError('Unsupported release version')
+    parts = match.groups()
+    return tuple(int(p) for p in parts[:3]) + (int(parts[3]) if parts[3] else float('inf'),)
+
+
+def cache_is_current(candidate, bundled):
+    try:
+        return release_order(version(candidate.read_text(encoding='utf-8'))) >= release_order(version(bundled.read_text(encoding='utf-8')))
+    except (OSError, ValueError, AttributeError):
+        return False
+
+
 def release_config(config, tag):
     """Release CI takes the tag as authoritative even if source YAML is older."""
     value = tag.lstrip('vV')
@@ -214,7 +229,7 @@ class App:
             if re.fullmatch(r'[vV]?\d+\.\d+\.\d+(?:-beta\.\d+)?', tag):
                 candidate = DATA / 'downloads' / tag
                 pin = candidate / 'ESPHOME_VERSION'
-                if (candidate / 'esphome-smart-clock.yaml').exists() and pin.exists() and pin.read_text().strip() == importlib.metadata.version('esphome'):
+                if pin.exists() and pin.read_text().strip() == importlib.metadata.version('esphome') and cache_is_current(candidate / 'esphome-smart-clock.yaml', self.source / 'esphome-smart-clock.yaml'):
                     self.source = candidate
         self.profile = DATA / 'device'
         saved = {}
@@ -451,10 +466,7 @@ class App:
             if not re.fullmatch(r'[vV]?\d+\.\d+\.\d+(?:-beta\.\d+)?', tag):
                 raise ValueError('Unsupported release version; bundled firmware remains selected.')
             current = version((self.source / 'esphome-smart-clock.yaml').read_text(encoding='utf-8'))
-            def order(v):
-                parts = re.fullmatch(r'[vV]?(\d+)\.(\d+)\.(\d+)(?:-beta\.(\d+))?', v).groups()
-                return tuple(int(p) for p in parts[:3]) + (int(parts[3]) if parts[3] else float('inf'),)
-            if order(tag) <= order(current):
+            if release_order(tag) <= release_order(current):
                 return f'Firmware {current} is up to date (including beta releases).'
             archive = zipfile.ZipFile(io.BytesIO(fetch(f'https://api.github.com/repos/{REPO}/zipball/{tag}')))
             target = DATA / 'downloads' / tag

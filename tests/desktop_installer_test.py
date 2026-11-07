@@ -13,6 +13,17 @@ spec.loader.exec_module(app)
 
 
 class InstallerTests(unittest.TestCase):
+    def test_new_installer_does_not_select_an_older_cached_beta(self):
+        with tempfile.TemporaryDirectory() as temp:
+            bundled = Path(temp) / 'bundled.yaml'
+            cached = Path(temp) / 'cached.yaml'
+            bundled.write_text('firmware_version: "0.1.0"')
+            for value, expected in [('0.1.0-beta.22', False), ('0.1.0', True), ('0.1.1', True), ('broken', False)]:
+                cached.write_text(f'firmware_version: "{value}"')
+                self.assertEqual(app.cache_is_current(cached, bundled), expected)
+            cached.write_text('incomplete download')
+            self.assertFalse(app.cache_is_current(cached, bundled))
+
     def port(self, device, vid=0x10C4):
         return SimpleNamespace(device=device, vid=vid, description='ESP USB bridge')
 
