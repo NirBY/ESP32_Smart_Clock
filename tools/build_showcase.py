@@ -1,4 +1,4 @@
-"""Package ImageGen's eight-slide storyboard as a GitHub-compatible GIF."""
+"""Package the eight feature panels plus the alarm-schedule detail slide."""
 from pathlib import Path
 from PIL import Image, ImageOps
 
@@ -13,9 +13,14 @@ for top, bottom in zip(rows, rows[1:]):
         panel = source.crop(box)
         frame = ImageOps.pad(panel, (768, 576), method=Image.Resampling.LANCZOS, color='#020b1e')
         frames.append(frame.quantize(colors=256, method=Image.Quantize.MEDIANCUT))
+alarm = Image.open(root / 'docs/images/alarm-schedules.png').convert('RGB')
+detail = ImageOps.pad(alarm, (768, 576), method=Image.Resampling.LANCZOS, color='#020b1e')
+frames.insert(5, detail.quantize(colors=256, method=Image.Quantize.MEDIANCUT))
+durations = [4000] * len(frames)
+durations[5] = 8000  # Allow time to read the weekly/monthly/date examples.
 target = root / 'docs/images/clock-showcase.gif'
-frames[0].save(target, save_all=True, append_images=frames[1:], duration=4000, loop=0, disposal=2, optimize=False)
+frames[0].save(target, save_all=True, append_images=frames[1:], duration=durations, loop=0, disposal=2, optimize=False)
 with Image.open(target) as check:
-    assert check.n_frames == 8 and check.size == (768, 576)
+    assert check.n_frames == 9 and check.size == (768, 576)
     assert check.info['loop'] == 0
-print(f'{target.name}: eight slides, four seconds each; {target.stat().st_size:,} bytes')
+print(f'{target.name}: nine slides, alarm detail held eight seconds; {target.stat().st_size:,} bytes')

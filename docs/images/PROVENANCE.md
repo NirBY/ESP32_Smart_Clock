@@ -95,3 +95,8 @@ were brought into line with the actual model. All other panel copy and layout
 were kept. Final prompt: change only these colon and rear-opening details;
 preserve the campaign and use the firmware bitmap and actual STL views as the
 authoritative references. The built-in tool was used for both edits.
+
+The current rotating gallery has nine frames: the eight original feature panels,
+with `alarm-schedules.png` inserted immediately after the alarm overview.
+The detailed schedule slide is held for eight seconds; the other frames use
+four seconds. The full schedule explanation lives in `docs/wiki/Gallery.md`.

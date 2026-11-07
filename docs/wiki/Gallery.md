@@ -1,5 +1,29 @@
 # Build gallery
 
+## Feature presentation
+
+![Animated nine-slide feature gallery](../images/clock-showcase.gif)
+
+The original eight feature panels are followed by a dedicated alarm-schedule
+detail slide immediately after the alarm overview. [Feature storyboard](../images/showcase-storyboard.png) · [Alarm schedule slide](../images/alarm-schedules.png).
+
+## Alarm schedules
+
+Configure one alarm in Home Assistant: every day, selected weekdays, a day of
+each month, or a specific date. Optionally limit it to an inclusive start/end
+date range. The schedule summary shows your choices in readable text.
+
+[![Weekly, monthly and specific-date alarm examples with an optional date range](../images/alarm-schedules.png)](Alarm.md)
+
+*Illustrated examples of the scheduling controls, not a live Home Assistant
+screenshot. Choose one schedule at a time. The
+[example dashboard](../home-assistant-dashboard.yaml) shows the relevant
+weekday switches, day-of-month control, or date picker for your selection.*
+
+See the [alarm setup and scheduling rules](Alarm.md). The clock displays
+`ALARM`, plays the selected local Alarm Sound, and sends an event to Home
+Assistant for additional automations.
+
 ## Actual printed clock
 
 ![Clock display](../images/clock-real.jpg)
@@ -20,15 +44,6 @@ GitHub also provides an interactive mesh preview when opening the
 [sensor cage](../../ESP32_Smart_Clock_3D_Design/stl/sensor_cage.stl).
 
 ## Promotional images
-
-![Animated eight-feature showcase](../images/clock-showcase.gif)
-
-[View all eight slides without animation](../images/showcase-storyboard.png).
-
-![Alarm scheduling: weekly, monthly, specific date and optional date range](../images/alarm-schedules.png)
-
-The alarm graphic illustrates alternative settings for one alarm; it is not a
-live Home Assistant screenshot. See the [alarm guide](Alarm.md).
 
 These are **AI-assisted retouches** of the creator's photographs, not new CAD
 renders or exact electrical references. The original photos above and below

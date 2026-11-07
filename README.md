@@ -4,7 +4,7 @@ An ESP32 clock with an 8x32 LED matrix, environmental sensors, alarms, countdown
 
 [![Clock, countdown, sensors, messages, alarms, audio, Home Assistant and printable enclosure](docs/images/clock-showcase.gif)](docs/wiki/Gallery.md)
 
-*Eight rotating feature slides in the original gallery style. Product illustrations are based on the real printed clock and enclosure geometry; display examples are illustrative. [Actual build photos](docs/wiki/Gallery.md#actual-printed-clock) · [All eight slides](docs/images/showcase-storyboard.png).*
+*Nine rotating gallery slides in the original gallery style. Product illustrations are based on the real printed clock and enclosure geometry; display examples are illustrative. [Actual build photos](docs/wiki/Gallery.md#actual-printed-clock) · [Feature storyboard](docs/images/showcase-storyboard.png) · [Alarm schedule slide](docs/wiki/Gallery.md#alarm-schedules).*
 
 [Wiring guide](docs/wiki/Wiring.md) · [Parts list](docs/wiki/Shopping-List.md) · [Build gallery](docs/wiki/Gallery.md)
 
@@ -28,23 +28,6 @@ the actual 3D model.*
 Print the body in white PLA for the tested 0.6 mm diffuser. The creator has printed and assembled the working clock in one continuous print. The enclosure files are licensed **CC BY-NC-SA 4.0** by NirBY; see the [design license scope](ESP32_Smart_Clock_3D_Design/ATTRIBUTION.md).
 
 [Find the enclosure on Creality Cloud](https://www.crealitycloud.com/model-detail/6adbce3bd4b1f991f82d5813).
-
-### Alarm schedules
-
-Configure one alarm in Home Assistant: every day, selected weekdays, a day of
-each month, or a specific date. Optionally limit it to an inclusive start/end
-date range. The schedule summary shows your choices in readable text.
-
-[![Weekly, monthly and specific-date alarm examples with an optional date range](docs/images/alarm-schedules.png)](docs/wiki/Alarm.md)
-
-*Illustrated examples of the scheduling controls, not a live Home Assistant
-screenshot. Choose one schedule at a time. The
-[example dashboard](docs/home-assistant-dashboard.yaml) shows the relevant
-weekday switches, day-of-month control, or date picker for your selection.*
-
-See the [alarm setup and scheduling rules](docs/wiki/Alarm.md). The clock displays
-`ALARM`, plays the selected local Alarm Sound, and sends an event to Home
-Assistant for additional automations.
 
 ## Quick Start
 
