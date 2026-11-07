@@ -1,5 +1,13 @@
 # Build gallery
 
+![Real clock rotating feature gallery](../images/clock-real-showcase.gif)
+
+Twelve slides cover time/date, sensors, countdowns, alarms, scheduled brightness,
+messages, alert sounds, music, desktop setup, updates, Home Assistant/MCP and
+the printable enclosure. These use original project photographs and an actual
+setup-window capture. The captions describe features; they are not photographs
+of every display mode. [View all slides](../images/clock-real-storyboard.jpg).
+
 ## Actual printed clock
 
 ![Clock display](../images/clock-real.jpg)

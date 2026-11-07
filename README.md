@@ -1,26 +1,17 @@
 # ESP32 Smart Clock
 
-Stable release `0.1.0` includes Windows/macOS online installers, automatic USB port refresh, total installation progress, brightness schedules with a Home Assistant editor, and selectable alert sounds. Download the EXE or DMG from [the latest release](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest).
+An ESP32 smart clock with an 8x32 MAX7219 LED matrix, temperature/humidity/pressure sensors, alarms, countdown timers, audio and Home Assistant controls. Includes wiring diagrams, a printable enclosure and dashboard examples.
 
-Release `0.1.0-beta.22` improves the large HH:MM clock and countdown numerals with an open seven-segment font, removes the internal strokes from zero, and uses single-pixel colon dots to improve readability when LED light blooms at a distance.
+Set up your clock with the guided desktop app: fill in Wi-Fi and Home Assistant settings, find the USB connection, then build and install your personalized firmware. It handles its own software setup, checks for updates, refreshes the USB port when you move the cable, and shows total progress. No separate Python or Java installation is needed. Download the **[Windows setup EXE](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-Windows-x64.exe)** or **[macOS setup DMG](https://github.com/NirBY/ESP32_Smart_Clock/releases/latest/download/SmartClock-macOS.dmg)**. Internet is required for initial setup and firmware tools; see the [installation guide](docs/wiki/Desktop-App.md).
 
-Release `0.1.0-beta.19` uses HA-compatible firmware versions and rejects development suffixes that make HA incorrectly show **Up-to-date**. Clocks running versions such as `beta.15-dev.3` need one personalized update from their local YAML; afterward, HA can correctly compare newer releases and enable **Update**. Public binaries still use example credentials. The blueprint notification links directly to the firmware update panel. Weekly, monthly, and specific-date alarms are covered in the [alarm guide](docs/wiki/Alarm.md).
+![Smart Clock desktop setup window](docs/images/desktop-setup.png)
 
-Release `0.1.0-beta.15` added a local countdown with a dedicated
-Home Assistant Timer device, configurable countdown/clock display intervals,
-and sliding transitions. See [Timer controls and behavior](docs/wiki/Timer.md).
-ESPHome is pinned to 2026.10.1. The countdown completion melody was installed
-and audibly approved on the creator's clock. The optional HA MCP script package
-still requires installation and end-to-end MCP testing.
+[![Clock, countdown, sensors, custom text, alarm, audio, Home Assistant and printable enclosure](docs/images/clock-real-showcase.gif)](docs/wiki/Gallery.md)
 
-[![Clock, countdown, sensors, custom text, alarm, audio, Home Assistant and printable enclosure](docs/images/clock-showcase.gif)](docs/wiki/Gallery.md)
-
-*Eight-feature animated showcase. Displays and enclosure illustrations are promotional; [actual build photos](docs/wiki/Gallery.md#actual-printed-clock) and [static slides](docs/images/showcase-storyboard.png) are available. Optional MCP scripts require setup.*
+*Twelve rotating feature slides using actual project photographs and the setup app. [View all slides](docs/images/clock-real-storyboard.jpg) or [open the build gallery](docs/wiki/Gallery.md). Features are described alongside the photos; not every display mode has been photographed. Optional MCP scripts require setup and verification.*
 
 [Full wiring diagram](docs/wiki/Wiring.md) · [Parts and purchase links](docs/wiki/Shopping-List.md) ·
 [Photo and STL gallery](docs/wiki/Gallery.md) · [Home Assistant MCP tools](docs/home-assistant-mcp/README.md)
-
-ESP32 smart clock project with an 8x32 MAX7219 LED matrix, AHT20/BMP280 indoor sensors, an NS4168 I2S audio amplifier module, and Home Assistant control through ESPHome.
 
 For normal use, install the **ESPHome smart clock firmware** from `esphome-smart-clock.yaml`.
 
